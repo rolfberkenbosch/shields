@@ -1,7 +1,6 @@
-'use strict'
-
-const { isMetric } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isMetric } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('downloads (number as a plugin id)')
   .get('/7495.json')
@@ -20,7 +19,7 @@ t.create('downloads (numeric id)')
   .intercept(nock =>
     nock('https://plugins.jetbrains.com')
       .get('/api/plugins/9435')
-      .reply(200, { downloads: 2 })
+      .reply(200, { downloads: 2 }),
   )
   .expectBadge({ label: 'downloads', message: '2' })
 
@@ -37,11 +36,11 @@ t.create('downloads (string id)')
               <category name="Code editing">
                 <idea-plugin downloads="2" size="13159" date="1485601807000" url=""></idea-plugin>
               </category>
-            </plugin-repository>`
+            </plugin-repository>`,
         ),
     {
       'Content-Type': 'text/xml;charset=UTF-8',
-    }
+    },
   )
   .expectBadge({ label: 'downloads', message: '2' })
 

@@ -1,20 +1,18 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { BaseJsonService, NotFound } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '../version.js'
+import { BaseJsonService, NotFound, pathParams } from '../index.js'
 
 const schema = Joi.object({
   entries: Joi.array()
     .items(
       Joi.object({
         source_package_version: Joi.string().required(),
-      })
+      }),
     )
     .required(),
 }).required()
 
-module.exports = class Ubuntu extends BaseJsonService {
+export default class Ubuntu extends BaseJsonService {
   static category = 'version'
 
   static route = {
@@ -22,13 +20,32 @@ module.exports = class Ubuntu extends BaseJsonService {
     pattern: ':packageName/:series?',
   }
 
-  static examples = [
-    {
-      title: 'Ubuntu package',
-      namedParams: { series: 'bionic', packageName: 'ubuntu-wallpapers' },
-      staticPreview: renderVersionBadge({ version: '18.04.1-0ubuntu1' }),
+  static openApi = {
+    '/ubuntu/v/{packageName}/{series}': {
+      get: {
+        summary: 'Ubuntu Package Version (for series)',
+        parameters: pathParams(
+          {
+            name: 'packageName',
+            example: 'ubuntu-wallpapers',
+          },
+          {
+            name: 'series',
+            example: 'bionic',
+          },
+        ),
+      },
     },
-  ]
+    '/ubuntu/v/{packageName}': {
+      get: {
+        summary: 'Ubuntu Package Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'ubuntu-wallpapers',
+        }),
+      },
+    },
+  }
 
   static defaultBadgeData = {
     label: 'ubuntu',
@@ -38,7 +55,7 @@ module.exports = class Ubuntu extends BaseJsonService {
     const seriesParam = series
       ? {
           distro_series: `https://api.launchpad.net/1.0/ubuntu/${encodeURIComponent(
-            series
+            series,
           )}`,
         }
       : {}
@@ -46,7 +63,7 @@ module.exports = class Ubuntu extends BaseJsonService {
       schema,
       url: 'https://api.launchpad.net/1.0/ubuntu/+archive/primary',
       options: {
-        qs: {
+        searchParams: {
           'ws.op': 'getPublishedSources',
           exact_match: 'true',
           order_by_date: 'true',
@@ -55,7 +72,7 @@ module.exports = class Ubuntu extends BaseJsonService {
           ...seriesParam,
         },
       },
-      errorMessages: {
+      httpErrors: {
         400: 'series not found',
       },
     })

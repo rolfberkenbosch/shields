@@ -1,8 +1,7 @@
-'use strict'
-
-const { starRating, metric } = require('../text-formatters')
-const { floorCount } = require('../color-formatters')
-const BaseWordpress = require('./wordpress-base')
+import { floorCount } from '../color-formatters.js'
+import { pathParams } from '../index.js'
+import { starRating, metric } from '../text-formatters.js'
+import { description, BaseWordpress } from './wordpress-base.js'
 
 const extensionData = {
   plugin: {
@@ -32,16 +31,21 @@ function RatingForExtensionType(extensionType) {
       pattern: ':slug',
     }
 
-    static examples = [
-      {
-        title: `WordPress ${capt} Rating`,
-        namedParams: { slug: exampleSlug },
-        staticPreview: this.render({
-          rating: 80,
-          numRatings: 100,
-        }),
-      },
-    ]
+    static get openApi() {
+      const key = `/wordpress/${extensionType}/rating/{slug}`
+      const route = {}
+      route[key] = {
+        get: {
+          summary: `WordPress ${capt} Rating`,
+          description,
+          parameters: pathParams({
+            name: 'slug',
+            example: exampleSlug,
+          }),
+        },
+      }
+      return route
+    }
 
     static render({ rating, numRatings }) {
       const scaledAndRounded = ((rating / 100) * 5).toFixed(1)
@@ -69,20 +73,25 @@ function StarsForExtensionType(extensionType) {
 
     static route = {
       base: `wordpress/${extensionType}`,
-      pattern: '(stars|r)/:slug',
+      pattern: ':starsEnum/:slug',
     }
+    static routeEnum = ['stars', 'r']
 
-    static examples = [
-      {
-        title: `WordPress ${capt} Rating`,
-        pattern: 'stars/:slug',
-        namedParams: { slug: exampleSlug },
-        staticPreview: this.render({
-          rating: 80,
-        }),
-        documentation: 'There is an alias <code>/r/:slug.svg</code> as well.',
-      },
-    ]
+    static get openApi() {
+      const key = `/wordpress/${extensionType}/stars/{slug}`
+      const route = {}
+      route[key] = {
+        get: {
+          summary: `WordPress ${capt} Stars`,
+          description,
+          parameters: pathParams({
+            name: 'slug',
+            example: exampleSlug,
+          }),
+        },
+      }
+      return route
+    }
 
     static render({ rating }) {
       const scaled = (rating / 100) * 5
@@ -103,4 +112,4 @@ const ratingsServices = ['plugin', 'theme'].map(RatingForExtensionType)
 const starsServices = ['plugin', 'theme'].map(StarsForExtensionType)
 const modules = [...ratingsServices, ...starsServices]
 
-module.exports = modules
+export default modules

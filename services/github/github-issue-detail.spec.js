@@ -1,24 +1,32 @@
-'use strict'
-
-const { expect } = require('chai')
-const { test, given } = require('sazerac')
-const { age } = require('../color-formatters')
-const { formatDate, metric } = require('../text-formatters')
-const { InvalidResponse } = require('..')
-const GithubIssueDetail = require('./github-issue-detail.service')
-const { stateColor, commentsColor } = require('./github-helpers')
+import { expect } from 'chai'
+import { test, given } from 'sazerac'
+import { age, formatDate } from '../date.js'
+import { metric } from '../text-formatters.js'
+import { InvalidResponse } from '../index.js'
+import GithubIssueDetail from './github-issue-detail.service.js'
+import { issueStateColor, commentsColor } from './github-helpers.js'
 
 describe('GithubIssueDetail', function () {
   test(GithubIssueDetail.render, () => {
     given({
       property: 'state',
-      value: { state: 'open' },
+      value: { state: 'open', draft: false },
       number: '12',
       isPR: true,
     }).expect({
       label: 'pull request 12',
       message: 'open',
-      color: stateColor('open'),
+      color: issueStateColor('open'),
+    })
+    given({
+      property: 'state',
+      value: { state: 'open', draft: true },
+      number: '13',
+      isPR: true,
+    }).expect({
+      label: 'pull request 13',
+      message: 'draft',
+      color: 'gray',
     })
     given({
       property: 'state',
@@ -28,7 +36,27 @@ describe('GithubIssueDetail', function () {
     }).expect({
       label: 'issue 15',
       message: 'closed',
-      color: stateColor('closed'),
+      color: issueStateColor('closed'),
+    })
+    given({
+      property: 'state',
+      value: { state: 'not planned' },
+      number: '93',
+      isPR: false,
+    }).expect({
+      label: 'issue 93',
+      message: 'not planned',
+      color: issueStateColor('not planned'),
+    })
+    given({
+      property: 'state',
+      value: { state: 'duplicate' },
+      number: '95',
+      isPR: false,
+    }).expect({
+      label: 'issue 95',
+      message: 'duplicate',
+      color: issueStateColor('duplicate'),
     })
     given({
       property: 'title',
@@ -92,6 +120,14 @@ describe('GithubIssueDetail', function () {
       message: formatDate('2019-04-02T20:09:31Z'),
       color: age('2019-04-02T20:09:31Z'),
     })
+    given({
+      property: 'milestone',
+      value: 'MS 1',
+    }).expect({
+      label: 'milestone',
+      message: 'MS 1',
+      color: 'informational',
+    })
   })
 
   test(GithubIssueDetail.prototype.transform, () => {
@@ -100,15 +136,53 @@ describe('GithubIssueDetail', function () {
       json: { state: 'closed' },
     }).expect({
       // Since it's a PR, the "merged" value is not crucial here.
-      value: { state: 'closed', merged: true },
+      value: { state: 'closed', merged: false, draft: false },
       isPR: false,
+    })
+    given({
+      property: 'state',
+      json: { state: 'closed', state_reason: 'not_planned' },
+    }).expect({
+      value: { state: 'not planned', merged: false, draft: false },
+      isPR: false,
+    })
+    given({
+      property: 'state',
+      json: { state: 'closed', state_reason: 'duplicate' },
+    }).expect({
+      value: { state: 'duplicate', merged: false, draft: false },
+      isPR: false,
+    })
+    given({
+      property: 'state',
+      json: { state: 'closed', state_reason: 'other_reason' },
+    }).expect({
+      value: { state: 'closed', merged: false, draft: false },
+      isPR: false,
+    })
+    given({
+      property: 'state',
+      json: { state: 'closed', pull_request: { merged_at: null } },
+    }).expect({
+      value: { state: 'closed', merged: false, draft: false },
+      isPR: true,
+    })
+    given({
+      property: 'state',
+      json: {
+        state: 'closed',
+        pull_request: { merged_at: '2025-01-01T00:00:00Z' },
+      },
+    }).expect({
+      value: { state: 'closed', merged: true, draft: false },
+      isPR: true,
     })
     given({
       property: 'state',
       issueKind: 'pulls',
       json: { state: 'closed', merged_at: null },
     }).expect({
-      value: { state: 'closed', merged: false },
+      value: { state: 'closed', merged: false, draft: false },
       isPR: true,
     })
     given({
@@ -116,7 +190,15 @@ describe('GithubIssueDetail', function () {
       issueKind: 'pulls',
       json: { state: 'closed', merged_at: 'I am not null' },
     }).expect({
-      value: { state: 'closed', merged: true },
+      value: { state: 'closed', merged: true, draft: false },
+      isPR: true,
+    })
+    given({
+      property: 'state',
+      issueKind: 'pulls',
+      json: { state: 'open', draft: true },
+    }).expect({
+      value: { state: 'open', merged: false, draft: true },
       isPR: true,
     })
     given({
@@ -180,6 +262,13 @@ describe('GithubIssueDetail', function () {
       value: '2019-04-02T20:09:31Z',
       isPR: false,
     })
+    given({
+      property: 'milestone',
+      json: { milestone: { title: 'MS 1' } },
+    }).expect({
+      value: 'MS 1',
+      isPR: false,
+    })
   })
 
   context('transform()', function () {
@@ -193,6 +282,21 @@ describe('GithubIssueDetail', function () {
       } catch (e) {
         expect(e).to.be.an.instanceof(InvalidResponse)
         expect(e.prettyMessage).to.equal('no labels found')
+      }
+    })
+  })
+
+  context('transform()', function () {
+    it('throws InvalidResponse error when issue has no milestone', function () {
+      try {
+        GithubIssueDetail.prototype.transform({
+          property: 'milestone',
+          json: { milestone: null },
+        })
+        expect.fail('Expected to throw')
+      } catch (e) {
+        expect(e).to.be.an.instanceof(InvalidResponse)
+        expect(e.prettyMessage).to.equal('no milestone')
       }
     })
   })

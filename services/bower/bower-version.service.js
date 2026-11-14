@@ -1,62 +1,39 @@
-'use strict'
+import { renderVersionBadge } from '../version.js'
+import { InvalidResponse, pathParams } from '../index.js'
+import BaseBowerService from './bower-base.js'
 
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { InvalidResponse, redirector } = require('..')
-const BaseBowerService = require('./bower-base')
-
-const queryParamSchema = Joi.object({
-  include_prereleases: Joi.equal(''),
-}).required()
-
-class BowerVersion extends BaseBowerService {
+export default class BowerVersion extends BaseBowerService {
   static category = 'version'
-  static route = { base: 'bower/v', pattern: ':packageName', queryParamSchema }
+  static route = { base: 'bower/v', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'Bower Version',
-      namedParams: { packageName: 'bootstrap' },
-      staticPreview: renderVersionBadge({ version: '4.2.1' }),
+  static openApi = {
+    '/bower/v/{packageName}': {
+      get: {
+        summary: 'Bower Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'bootstrap',
+        }),
+      },
     },
-    {
-      title: 'Bower Version (including pre-releases)',
-      namedParams: { packageName: 'bootstrap' },
-      queryParams: { include_prereleases: null },
-      staticPreview: renderVersionBadge({ version: '4.2.1' }),
-    },
-  ]
+  }
 
   static defaultBadgeData = { label: 'bower' }
 
-  async handle({ packageName }, queryParams) {
-    const data = await this.fetch({ packageName })
-    const includePrereleases = queryParams.include_prereleases !== undefined
+  static transform(data) {
+    const version = data.latest_release_number
 
-    if (includePrereleases) {
-      if (data.latest_release_number) {
-        return renderVersionBadge({ version: data.latest_release_number })
-      }
-    } else {
-      if (data.latest_stable_release) {
-        return renderVersionBadge({ version: data.latest_stable_release.name })
-      }
+    if (!version) {
+      throw new InvalidResponse({ prettyMessage: 'no releases' })
     }
-    throw new InvalidResponse({ prettyMessage: 'no releases' })
+
+    return version
+  }
+
+  async handle({ packageName }) {
+    const data = await this.fetch({ packageName })
+    const version = this.constructor.transform(data)
+
+    return renderVersionBadge({ version })
   }
 }
-
-const BowerVersionRedirect = redirector({
-  category: 'version',
-  route: {
-    base: 'bower/vpre',
-    pattern: ':packageName',
-  },
-  transformPath: ({ packageName }) => `/bower/v/${packageName}`,
-  transformQueryParams: params => ({
-    include_prereleases: null,
-  }),
-  dateAdded: new Date('2019-12-15'),
-})
-
-module.exports = { BowerVersion, BowerVersionRedirect }

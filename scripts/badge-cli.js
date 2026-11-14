@@ -1,11 +1,8 @@
-'use strict'
-
-const { URL } = require('url')
-const config = require('config').util.toObject()
-const got = require('got')
-const emojic = require('emojic')
-const Server = require('../core/server/server')
-const trace = require('../core/base-service/trace')
+import { fileURLToPath, URL } from 'url'
+import config from 'config'
+import got from 'got'
+import Server from '../core/server/server.js'
+import trace from '../core/base-service/trace.js'
 
 function normalizeBadgeUrl(url) {
   // Provide a base URL in order to accept fragments.
@@ -18,18 +15,18 @@ function normalizeBadgeUrl(url) {
 }
 
 async function traceBadge(badgeUrl) {
-  const server = new Server(config)
+  const server = new Server(config.util.toObject())
   await server.start()
   const body = await got(
-    `${server.baseUrl.replace(/\/$/, '')}${badgeUrl}`
+    `${server.baseUrl.replace(/\/$/, '')}${badgeUrl}`,
   ).json()
-  trace.logTrace('outbound', emojic.shield, 'Rendered badge', body)
+  trace.logTrace('outbound', '🛡', 'Rendered badge', body)
   await server.stop()
 }
 
 async function main() {
   if (process.argv.length < 3) {
-    console.error(`Usage: node ${__filename} badge-url`)
+    console.error(`Usage: node ${fileURLToPath(import.meta.url)} badge-url`)
     process.exit(1)
   }
   const [, , url] = process.argv

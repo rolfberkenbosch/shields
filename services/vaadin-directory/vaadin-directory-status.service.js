@@ -1,10 +1,7 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseVaadinDirectoryService } from './vaadin-directory-base.js'
 
-const { BaseVaadinDirectoryService } = require('./vaadin-directory-base')
-
-module.exports = class VaadinDirectoryStatus extends (
-  BaseVaadinDirectoryService
-) {
+export default class VaadinDirectoryStatus extends BaseVaadinDirectoryService {
   static category = 'other'
 
   static route = {
@@ -12,14 +9,17 @@ module.exports = class VaadinDirectoryStatus extends (
     pattern: ':packageName',
   }
 
-  static examples = [
-    {
-      title: 'Vaadin Directory',
-      namedParams: { packageName: 'vaadinvaadin-grid' },
-      staticPreview: this.render({ status: 'published' }),
-      keywords: ['vaadin-directory', 'status'],
+  static openApi = {
+    '/vaadin-directory/status/{packageName}': {
+      get: {
+        summary: 'Vaadin Directory Status',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'vaadinvaadin-grid',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'vaadin directory',

@@ -1,26 +1,26 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { metric } from '../text-formatters.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.array()
   .items(Joi.array().items(Joi.number().required(), Joi.number().required()))
   .required()
 
-module.exports = class BStatsServers extends BaseJsonService {
+export default class BStatsServers extends BaseJsonService {
   static category = 'other'
   static route = { base: 'bstats/servers', pattern: ':pluginid' }
 
-  static examples = [
-    {
-      title: 'bStats Servers',
-      namedParams: {
-        pluginid: '1',
+  static openApi = {
+    '/bstats/servers/{pluginid}': {
+      get: {
+        summary: 'bStats Servers',
+        parameters: pathParams({
+          name: 'pluginid',
+          example: '1',
+        }),
       },
-      staticPreview: this.render({ servers: 57479 }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'servers', color: 'blue' }
 
@@ -36,7 +36,7 @@ module.exports = class BStatsServers extends BaseJsonService {
     return this._requestJson({
       schema,
       options: {
-        qs: {
+        searchParams: {
           maxElements: 1,
         },
       },

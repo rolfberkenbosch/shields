@@ -1,25 +1,31 @@
-'use strict'
+import { renderBuildStatusBadge } from '../build-status.js'
+import { pathParams } from '../index.js'
+import AppVeyorBase from './appveyor-base.js'
 
-const { renderBuildStatusBadge } = require('../build-status')
-const AppVeyorBase = require('./appveyor-base')
-
-module.exports = class AppVeyorBuild extends AppVeyorBase {
+export default class AppVeyorBuild extends AppVeyorBase {
   static route = this.buildRoute('appveyor/build')
 
-  static examples = [
-    {
-      title: 'AppVeyor',
-      pattern: ':user/:repo',
-      namedParams: { user: 'gruntjs', repo: 'grunt' },
-      staticPreview: this.render({ status: 'success' }),
+  static openApi = {
+    '/appveyor/build/{user}/{repo}': {
+      get: {
+        summary: 'AppVeyor Build',
+        parameters: pathParams(
+          { name: 'user', example: 'gruntjs' },
+          { name: 'repo', example: 'grunt' },
+        ),
+      },
     },
-    {
-      title: 'AppVeyor branch',
-      pattern: ':user/:repo/:branch',
-      namedParams: { user: 'gruntjs', repo: 'grunt', branch: 'master' },
-      staticPreview: this.render({ status: 'success' }),
+    '/appveyor/build/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'AppVeyor Build (with branch)',
+        parameters: pathParams(
+          { name: 'user', example: 'gruntjs' },
+          { name: 'repo', example: 'grunt' },
+          { name: 'branch', example: 'master' },
+        ),
+      },
     },
-  ]
+  }
 
   static render({ status }) {
     return renderBuildStatusBadge({ status })

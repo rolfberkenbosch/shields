@@ -1,33 +1,34 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderLicenseBadge } = require('../licenses')
-const toArray = require('../../core/base-service/to-array')
-const BaseCondaService = require('./conda-base')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { renderLicenseBadge } from '../licenses.js'
+import toArray from '../../core/base-service/to-array.js'
+import BaseCondaService from './conda-base.js'
 
 const schema = Joi.object({
   license: Joi.string().required(),
 }).required()
 
-module.exports = class CondaLicense extends BaseCondaService {
+export default class CondaLicense extends BaseCondaService {
   static category = 'license'
-  static route = { base: 'conda', pattern: 'l/:channel/:pkg' }
+  static route = { base: 'conda/l', pattern: ':channel/:packageName' }
 
-  static examples = [
-    {
-      title: 'Conda - License',
-      pattern: 'l/:channel/:package',
-      namedParams: {
-        channel: 'conda-forge',
-        package: 'setuptools',
+  static openApi = {
+    '/conda/l/{channel}/{packageName}': {
+      get: {
+        summary: 'Conda - License',
+        parameters: pathParams(
+          {
+            name: 'channel',
+            example: 'conda-forge',
+          },
+          {
+            name: 'packageName',
+            example: 'mlforecast',
+          },
+        ),
       },
-      staticPreview: this.render({
-        variant: 'l',
-        channel: 'conda-forge',
-        licenses: ['MIT'],
-      }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'license' }
 
@@ -35,10 +36,10 @@ module.exports = class CondaLicense extends BaseCondaService {
     return renderLicenseBadge({ licenses })
   }
 
-  async handle({ channel, pkg }) {
+  async handle({ channel, packageName }) {
     const json = await this._requestJson({
       schema,
-      url: `https://api.anaconda.org/package/${channel}/${pkg}`,
+      url: `https://api.anaconda.org/package/${channel}/${packageName}`,
     })
     return this.constructor.render({
       licenses: toArray(json.license),

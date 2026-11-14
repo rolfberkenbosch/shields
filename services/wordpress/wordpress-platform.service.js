@@ -1,10 +1,7 @@
-'use strict'
-
-const { NotFound } = require('..')
-const { addv } = require('../text-formatters')
-const { version: versionColor } = require('../color-formatters')
-const BaseWordpress = require('./wordpress-base')
-const { versionColorForWordpressVersion } = require('./wordpress-version-color')
+import { NotFound, pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { description, BaseWordpress } from './wordpress-base.js'
+import { versionColorForWordpressVersion } from './wordpress-version-color.js'
 
 const extensionData = {
   plugin: {
@@ -30,22 +27,23 @@ function WordpressRequiresVersion(extensionType) {
       pattern: ':slug',
     }
 
-    static examples = [
-      {
-        title: `WordPress ${capt}: Required WP Version`,
-        namedParams: { slug: exampleSlug },
-        staticPreview: this.render({ wordpressVersion: '4.8' }),
-      },
-    ]
+    static get openApi() {
+      const key = `/wordpress/${extensionType}/wp-version/{slug}`
+      const route = {}
+      route[key] = {
+        get: {
+          summary: `WordPress ${capt}: Required WP Version`,
+          description,
+          parameters: pathParams({
+            name: 'slug',
+            example: exampleSlug,
+          }),
+        },
+      }
+      return route
+    }
 
     static defaultBadgeData = { label: 'wordpress' }
-
-    static render({ wordpressVersion }) {
-      return {
-        message: addv(wordpressVersion),
-        color: versionColor(wordpressVersion),
-      }
-    }
 
     async handle({ slug }) {
       const { requires: wordpressVersion } = await this.fetch({
@@ -59,7 +57,7 @@ function WordpressRequiresVersion(extensionType) {
         })
       }
 
-      return this.constructor.render({ wordpressVersion })
+      return renderVersionBadge({ version: wordpressVersion })
     }
   }
 }
@@ -68,47 +66,37 @@ class WordpressPluginTestedVersion extends BaseWordpress {
   static category = 'platform-support'
 
   static route = {
-    base: `wordpress/plugin/tested`,
+    base: 'wordpress/plugin/tested',
     pattern: ':slug',
   }
 
-  static examples = [
-    {
-      title: 'WordPress Plugin: Tested WP Version',
-      namedParams: { slug: 'bbpress' },
-      staticPreview: this.renderStaticPreview({
-        testedVersion: '4.9.8',
-      }),
+  static openApi = {
+    '/wordpress/plugin/tested/{slug}': {
+      get: {
+        summary: 'WordPress Plugin: Tested WP Version',
+        description,
+        parameters: pathParams({
+          name: 'slug',
+          example: 'bbpress',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'wordpress' }
-
-  static renderStaticPreview({ testedVersion }) {
-    // Since this badge has an async `render()` function, but `get examples()` has to
-    // be synchronous, this method exists. It should return the same value as the
-    // real `render()`.
-    return {
-      message: `${addv(testedVersion)} tested`,
-      color: 'brightgreen',
-    }
-  }
-
-  static async render({ testedVersion }) {
-    // Atypically, the `render()` function of this badge is `async` because it needs to pull
-    // data from the server.
-    return {
-      message: `${addv(testedVersion)} tested`,
-      color: await versionColorForWordpressVersion(testedVersion),
-    }
-  }
 
   async handle({ slug }) {
     const { tested: testedVersion } = await this.fetch({
       extensionType: 'plugin',
       slug,
     })
-    return this.constructor.render({ testedVersion })
+    // Atypically, pulling color data from the server with async operation.
+    const color = await versionColorForWordpressVersion(testedVersion)
+    return renderVersionBadge({
+      version: testedVersion,
+      suffix: 'tested',
+      versionFormatter: () => color,
+    })
   }
 }
 
@@ -125,23 +113,23 @@ function RequiresPHPVersionForType(extensionType) {
       pattern: ':slug',
     }
 
-    static examples = [
-      {
-        title: `WordPress ${capt} Required PHP Version`,
-        namedParams: { slug: exampleSlug },
-        staticPreview: this.render({ version: '5.5' }),
-      },
-    ]
+    static get openApi() {
+      const key = `/wordpress/${extensionType}/required-php/{slug}`
+      const route = {}
+      route[key] = {
+        get: {
+          summary: `WordPress ${capt} Required PHP Version`,
+          description,
+          parameters: pathParams({
+            name: 'slug',
+            example: exampleSlug,
+          }),
+        },
+      }
+      return route
+    }
 
     static defaultBadgeData = { label: 'php' }
-
-    static render({ version }) {
-      return {
-        label: 'php',
-        message: `>=${version}`,
-        color: versionColor(version),
-      }
-    }
 
     async handle({ slug }) {
       const { requires_php: requiresPhp } = await this.fetch({
@@ -155,16 +143,14 @@ function RequiresPHPVersionForType(extensionType) {
         })
       }
 
-      return this.constructor.render({
-        version: requiresPhp,
-      })
+      return renderVersionBadge({ version: requiresPhp, prefix: '>=' })
     }
   }
 }
 
 const requiredPhp = ['plugin', 'theme'].map(RequiresPHPVersionForType)
 const requiresVersion = ['plugin', 'theme'].map(WordpressRequiresVersion)
-module.exports = [
+export default [
   ...requiredPhp,
   ...requiresVersion,
   WordpressPluginTestedVersion,

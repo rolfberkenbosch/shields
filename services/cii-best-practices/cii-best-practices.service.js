@@ -1,15 +1,11 @@
-'use strict'
-
-const Joi = require('joi')
-const { colorScale, coveragePercentage } = require('../color-formatters')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { colorScale, coveragePercentage } from '../color-formatters.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.object({
   badge_level: Joi.string().required(),
   tiered_percentage: Joi.number().required(),
 }).required()
-
-const keywords = ['core infrastructure initiative']
 
 const summaryColorScale = colorScale(
   [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300],
@@ -27,47 +23,37 @@ const summaryColorScale = colorScale(
     'brightgreen',
     '#BBBBBB',
     '#E9C504',
-  ]
+  ],
 )
 
-module.exports = class CIIBestPracticesService extends BaseJsonService {
+export default class CIIBestPracticesService extends BaseJsonService {
   static category = 'analysis'
   static route = {
     base: 'cii',
-    pattern: ':metric(level|percentage|summary)/:projectId',
+    pattern: ':metric/:projectId',
   }
+  static routeEnum = ['level', 'percentage', 'summary']
 
-  static exampless = [
-    {
-      title: 'CII Best Practices Level',
-      pattern: 'level/:projectId',
-      namedParams: {
-        projectId: '1',
+  static openApi = {
+    '/cii/{metric}/{projectId}': {
+      get: {
+        summary: 'CII Best Practices',
+        description:
+          'The Core Infrastructure Initiative (CII) Best Practices badge is a way for Open Source projects to show that they follow best practices',
+        parameters: pathParams(
+          {
+            name: 'metric',
+            example: 'level',
+            schema: { type: 'string', enum: this.getEnum('metric') },
+          },
+          {
+            name: 'projectId',
+            example: '1',
+          },
+        ),
       },
-      staticPreview: this.renderLevelBadge({ level: 'gold' }),
-      keywords,
     },
-    {
-      title: 'CII Best Practices Tiered Percentage',
-      pattern: 'percentage/:projectId',
-      namedParams: {
-        projectId: '29',
-      },
-      staticPreview: this.renderTieredPercentageBadge({ percentage: 107 }),
-      keywords,
-    },
-    {
-      title: 'CII Best Practices Summary',
-      pattern: 'summary/:projectId',
-      namedParams: {
-        projectId: '33',
-      },
-      staticPreview: this.renderSummaryBadge({ percentage: 94 }),
-      keywords,
-      documentation:
-        'This badge uses the same message and color scale as the native CII one, but with all the configuration and goodness that Shields provides!',
-    },
-  ]
+  }
 
   static defaultBadgeData = { label: 'cii' }
 
@@ -113,16 +99,14 @@ module.exports = class CIIBestPracticesService extends BaseJsonService {
 
   async handle({ metric, projectId }) {
     // No official API documentation is available.
-    const {
-      badge_level: level,
-      tiered_percentage: percentage,
-    } = await this._requestJson({
-      schema,
-      url: `https://bestpractices.coreinfrastructure.org/projects/${projectId}/badge.json`,
-      errorMessages: {
-        404: 'project not found',
-      },
-    })
+    const { badge_level: level, tiered_percentage: percentage } =
+      await this._requestJson({
+        schema,
+        url: `https://bestpractices.coreinfrastructure.org/projects/${projectId}/badge.json`,
+        httpErrors: {
+          404: 'project not found',
+        },
+      })
 
     if (metric === 'level') {
       return this.constructor.renderLevelBadge({ level })

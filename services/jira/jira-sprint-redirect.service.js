@@ -1,18 +1,14 @@
-'use strict'
+import { retiredService } from '../index.js'
 
-const { redirector } = require('..')
-
-module.exports = [
-  redirector({
+export default [
+  retiredService({
     category: 'issue-tracking',
+    label: 'jira',
     route: {
       base: 'jira/sprint',
       pattern: ':protocol(http|https)/:hostAndPath(.+)/:sprintId',
     },
-    transformPath: ({ sprintId }) => `/jira/sprint/${sprintId}`,
-    transformQueryParams: ({ protocol, hostAndPath }) => ({
-      baseUrl: `${protocol}://${hostAndPath}`,
-    }),
-    dateAdded: new Date('2019-09-14'),
+    dateAdded: new Date('2025-12-20'),
+    issueUrl: 'https://github.com/badges/shields/pull/11583',
   }),
 ]

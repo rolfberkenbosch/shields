@@ -1,11 +1,10 @@
-'use strict'
-
-const Joi = require('joi')
-const t = (module.exports = require('../tester').createServiceTester())
-const { isMetric } = require('../test-validators')
+import Joi from 'joi'
+import { createServiceTester } from '../tester.js'
+import { isMetric } from '../test-validators.js'
+export const t = await createServiceTester()
 const isMetricAllowZero = Joi.alternatives(
   isMetric,
-  Joi.number().valid(0).required()
+  Joi.number().valid(0).required(),
 )
 
 t.create('Total')
@@ -40,5 +39,12 @@ t.create('Errored')
   .get('/errored/swellaby/swellaby:testspace-sample/main.json')
   .expectBadge({
     label: 'errored tests',
+    message: isMetricAllowZero,
+  })
+
+t.create('Untested')
+  .get('/untested/swellaby/swellaby:testspace-sample/main.json')
+  .expectBadge({
+    label: 'untested tests',
     message: isMetricAllowZero,
   })

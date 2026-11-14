@@ -1,22 +1,21 @@
-'use strict'
+import { Agent, MockAgent, setGlobalDispatcher } from 'undici'
+import { isMetric } from '../test-validators.js'
+import { ServiceTester } from '../tester.js'
 
-const { isMetric } = require('../test-validators')
-const { ServiceTester } = require('../tester')
-
-const t = (module.exports = new ServiceTester({
+export const t = new ServiceTester({
   id: 'ChromeWebStoreUsers',
   title: 'Chrome Web Store Users',
   pathPrefix: '/chrome-web-store',
-}))
+})
 
 t.create('Downloads (redirect)')
-  .get('/d/alhjnofcnnpeaphgeakdhkebafjcpeae.svg')
+  .get('/d/ddkjiahejlhfcafbddmgiahcphecmpfh.svg')
   .expectRedirect(
-    '/chrome-web-store/users/alhjnofcnnpeaphgeakdhkebafjcpeae.svg'
+    '/chrome-web-store/users/ddkjiahejlhfcafbddmgiahcphecmpfh.svg',
   )
 
 t.create('Users')
-  .get('/users/alhjnofcnnpeaphgeakdhkebafjcpeae.json')
+  .get('/users/ddkjiahejlhfcafbddmgiahcphecmpfh.json')
   .expectBadge({ label: 'users', message: isMetric })
 
 t.create('Users (not found)')
@@ -24,7 +23,16 @@ t.create('Users (not found)')
   .expectBadge({ label: 'users', message: 'not found' })
 
 // Keep this "inaccessible" test, since this service does not use BaseService#_request.
+const mockAgent = new MockAgent()
 t.create('Users (inaccessible)')
-  .get('/users/alhjnofcnnpeaphgeakdhkebafjcpeae.json')
-  .networkOff()
+  .get('/users/ddkjiahejlhfcafbddmgiahcphecmpfh.json')
+  // webextension-store-meta uses undici internally, so we can't mock it with nock
+  .before(function () {
+    setGlobalDispatcher(mockAgent)
+    mockAgent.disableNetConnect()
+  })
+  .after(async function () {
+    await mockAgent.close()
+    setGlobalDispatcher(new Agent())
+  })
   .expectBadge({ label: 'users', message: 'inaccessible' })

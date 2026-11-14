@@ -1,8 +1,11 @@
-'use strict'
-
-const { test, given } = require('sazerac')
-const { metric } = require('../text-formatters')
-const SonarViolations = require('./sonar-violations.service')
+import { test, given } from 'sazerac'
+import { metric } from '../text-formatters.js'
+import { testAuth } from '../test-helpers.js'
+import SonarViolations from './sonar-violations.service.js'
+import {
+  legacySonarResponse,
+  testAuthConfigOverride,
+} from './sonar-spec-helpers.js'
 
 describe('SonarViolations', function () {
   test(SonarViolations.render, () => {
@@ -110,6 +113,20 @@ describe('SonarViolations', function () {
     given({ violations: 6, info_violations: 5, blocker_violations: 1 }).expect({
       message: '1 blocker, 5 info',
       color: 'red',
+    })
+  })
+
+  describe('auth', function () {
+    it('sends the auth information as configured', async function () {
+      return testAuth(
+        SonarViolations,
+        'BasicAuth',
+        legacySonarResponse('violations', 95),
+        {
+          configOverride: testAuthConfigOverride,
+          exampleOverride: { format: 'short' },
+        },
+      )
     })
   })
 })

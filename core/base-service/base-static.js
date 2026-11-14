@@ -1,19 +1,31 @@
-'use strict'
-
-const makeBadge = require('../../badge-maker/lib/make-badge')
-const BaseService = require('./base')
-const {
+import makeBadge from '../../badge-maker/lib/make-badge.js'
+import BaseService from './base.js'
+import {
   serverHasBeenUpSinceResourceCached,
   setCacheHeadersForStaticResource,
-} = require('./cache-headers')
-const { makeSend } = require('./legacy-result-sender')
-const { MetricHelper } = require('./metric-helper')
-const coalesceBadge = require('./coalesce-badge')
-const { prepareRoute, namedParamsForMatch } = require('./route')
+} from './cache-headers.js'
+import { makeSend } from './legacy-result-sender.js'
+import { MetricHelper } from './metric-helper.js'
+import coalesceBadge from './coalesce-badge.js'
+import {
+  prepareRoute,
+  namedParamsForMatch,
+  getQueryParamNames,
+} from './route.js'
+import { flattenQueryParams, filterQueryParams } from './query-params.js'
 
-module.exports = class BaseStaticService extends BaseService {
+/**
+ * Base class for services that generate static badges from route parameters
+ * and query parameters.
+ *
+ * Registers the service route, handles cache validation, invokes the service,
+ * builds the badge data, sets cache headers, renders the badge, and records
+ * request metrics.
+ */
+export default class BaseStaticService extends BaseService {
   static register({ camp, metricInstance }, serviceConfig) {
     const { regex, captureNames } = prepareRoute(this.route)
+    const allowedKeys = flattenQueryParams(getQueryParamNames(this.route))
 
     const metricHelper = MetricHelper.create({
       metricInstance,
@@ -31,25 +43,30 @@ module.exports = class BaseStaticService extends BaseService {
       const metricHandle = metricHelper.startRequest()
 
       const namedParams = namedParamsForMatch(captureNames, match, this)
+      const filteredQueryParams = filterQueryParams(queryParams, allowedKeys)
       const serviceData = await this.invoke(
         {},
         serviceConfig,
         namedParams,
-        queryParams
+        filteredQueryParams,
       )
 
       const badgeData = coalesceBadge(
-        queryParams,
+        filteredQueryParams,
         serviceData,
         this.defaultBadgeData,
-        this
+        this,
       )
 
       // The final capture group is the extension.
       const format = (match.slice(-1)[0] || '.svg').replace(/^\./, '')
       badgeData.format = format
 
-      setCacheHeadersForStaticResource(ask.res)
+      let maxAge = 24 * 3600 // 1 day
+      if (!filteredQueryParams.logo && !badgeData.isError) {
+        maxAge = 5 * 24 * 3600 // 5 days
+      }
+      setCacheHeadersForStaticResource(ask.res, maxAge)
 
       const svg = makeBadge(badgeData)
       makeSend(format, ask.res, end)(svg)

@@ -1,70 +1,60 @@
-'use strict'
+import Joi from 'joi'
+import { renderDownloadsBadge } from '../downloads.js'
+import { pathParams } from '../index.js'
+import { nonNegativeInteger } from '../validators.js'
+import EclipseMarketplaceBase from './eclipse-marketplace-base.js'
 
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { downloadCount: downloadCountColor } = require('../color-formatters')
-const { nonNegativeInteger } = require('../validators')
-const EclipseMarketplaceBase = require('./eclipse-marketplace-base')
-
-const monthlyResponseSchema = Joi.object({
+const downloadsResponseSchema = Joi.object({
   marketplace: Joi.object({
     node: Joi.object({
       installsrecent: nonNegativeInteger,
-    }),
-  }),
-}).required()
-
-const totalResponseSchema = Joi.object({
-  marketplace: Joi.object({
-    node: Joi.object({
       installstotal: nonNegativeInteger,
     }),
   }),
 }).required()
 
-function DownloadsForInterval(interval) {
-  const { base, schema, messageSuffix = '', name } = {
-    month: {
-      base: 'eclipse-marketplace/dm',
-      messageSuffix: '/month',
-      schema: monthlyResponseSchema,
-      name: 'EclipseMarketplaceDownloadsMonth',
-    },
-    total: {
-      base: 'eclipse-marketplace/dt',
-      schema: totalResponseSchema,
-      name: 'EclipseMarketplaceDownloadsTotal',
-    },
-  }[interval]
+export default class EclipseMarketplaceDownloads extends EclipseMarketplaceBase {
+  static category = 'downloads'
+  static route = {
+    base: 'eclipse-marketplace',
+    pattern: ':interval/:name',
+  }
+  static routeEnum = ['dm', 'dt']
 
-  return class EclipseMarketplaceDownloads extends EclipseMarketplaceBase {
-    static name = name
-    static category = 'downloads'
-    static route = this.buildRoute(base)
-    static examples = [
-      {
-        title: 'Eclipse Marketplace',
-        namedParams: { name: 'notepad4e' },
-        staticPreview: this.render({ downloads: 30000 }),
+  static openApi = {
+    '/eclipse-marketplace/{interval}/{name}': {
+      get: {
+        summary: 'Eclipse Marketplace Downloads',
+        parameters: pathParams(
+          {
+            name: 'interval',
+            example: 'dt',
+            schema: { type: 'string', enum: this.getEnum('interval') },
+            description: 'Monthly or Total downloads',
+          },
+          {
+            name: 'name',
+            example: 'planet-themes',
+          },
+        ),
       },
-    ]
+    },
+  }
 
-    static render({ downloads }) {
-      return {
-        message: `${metric(downloads)}${messageSuffix}`,
-        color: downloadCountColor(downloads),
-      }
-    }
+  static render({ interval, downloads }) {
+    const intervalString = interval === 'dm' ? 'month' : null
+    return renderDownloadsBadge({ downloads, interval: intervalString })
+  }
 
-    async handle({ name }) {
-      const { marketplace } = await this.fetch({ name, schema })
-      const downloads =
-        interval === 'total'
-          ? marketplace.node.installstotal
-          : marketplace.node.installsrecent
-      return this.constructor.render({ downloads })
-    }
+  async handle({ interval, name }) {
+    const { marketplace } = await this.fetch({
+      schema: downloadsResponseSchema,
+      name,
+    })
+    const downloads =
+      interval === 'dt'
+        ? marketplace.node.installstotal
+        : marketplace.node.installsrecent
+    return this.constructor.render({ downloads, interval })
   }
 }
-
-module.exports = ['month', 'total'].map(DownloadsForInterval)

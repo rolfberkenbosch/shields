@@ -1,7 +1,6 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
-const { isCurrencyOverTime } = require('./liberapay-base')
+import { createServiceTester } from '../tester.js'
+import { isCurrencyOverTime } from './liberapay-base.js'
+export const t = await createServiceTester()
 
 t.create('Giving (valid)').get('/Changaco.json').expectBadge({
   label: 'gives',
@@ -21,7 +20,7 @@ t.create('Giving (missing goal key)')
         npatrons: 0,
         giving: { amount: '3.71', currency: 'EUR' },
         receiving: null,
-      })
+      }),
   )
   .expectBadge({ label: 'gives', message: isCurrencyOverTime })
 
@@ -33,6 +32,6 @@ t.create('Giving (null)')
       giving: null,
       receiving: null,
       goal: null,
-    })
+    }),
   )
   .expectBadge({ label: 'liberapay', message: 'no public giving stats' })

@@ -1,9 +1,7 @@
-'use strict'
-
-const { expect } = require('chai')
-const nock = require('nock')
-const { cleanUpNockAfterEach, defaultContext } = require('../test-helpers')
-const TwitchStatus = require('./twitch.service')
+import { expect } from 'chai'
+import nock from 'nock'
+import { cleanUpNockAfterEach, defaultContext } from '../test-helpers.js'
+import TwitchStatus from './twitch.service.js'
 
 describe('TwitchStatus', function () {
   describe('auth', function () {
@@ -45,9 +43,10 @@ describe('TwitchStatus', function () {
       expect(
         await TwitchStatus.invoke(defaultContext, config, {
           status: 'andyonthewings',
-        })
+        }),
       ).to.deep.equal({
         message: 'offline',
+        style: 'social',
         link: 'https://www.twitch.tv/undefined',
         color: 'lightgrey',
       })

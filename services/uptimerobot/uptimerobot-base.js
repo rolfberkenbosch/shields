@@ -1,7 +1,5 @@
-'use strict'
-
-const Joi = require('joi')
-const { BaseJsonService, InvalidParameter, InvalidResponse } = require('..')
+import Joi from 'joi'
+import { BaseJsonService, InvalidParameter, InvalidResponse } from '../index.js'
 
 // https://uptimerobot.com/api
 // POST getMonitors
@@ -27,7 +25,7 @@ const singleMonitorResponse = Joi.alternatives(
   Joi.object({
     stat: Joi.equal('ok').required(),
     monitors: Joi.array().length(1).items(monitor).required(),
-  }).required()
+  }).required(),
 )
 
 const singleMonitorResponseWithUptime = Joi.alternatives(
@@ -35,10 +33,10 @@ const singleMonitorResponseWithUptime = Joi.alternatives(
   Joi.object({
     stat: Joi.equal('ok').required(),
     monitors: Joi.array().length(1).items(monitorWithUptime).required(),
-  }).required()
+  }).required(),
 )
 
-module.exports = class UptimeRobotBase extends BaseJsonService {
+export default class UptimeRobotBase extends BaseJsonService {
   static category = 'monitoring'
 
   static ensureIsMonitorApiKey(value) {
@@ -76,6 +74,7 @@ module.exports = class UptimeRobotBase extends BaseJsonService {
           ...opts,
         },
       },
+      logErrors: [],
     })
 
     if (stat === 'fail') {

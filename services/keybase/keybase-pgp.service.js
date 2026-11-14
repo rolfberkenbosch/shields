@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const KeybaseProfile = require('./keybase-profile')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { nonNegativeInteger } from '../validators.js'
+import KeybaseProfile from './keybase-profile.js'
 
 const keyFingerprintSchema = Joi.object({
   status: Joi.object({
@@ -18,34 +17,40 @@ const keyFingerprintSchema = Joi.object({
         },
       })
         .required()
-        .allow(null)
+        .allow(null),
     )
     .min(0)
     .max(1),
 }).required()
 
-module.exports = class KeybasePGP extends KeybaseProfile {
+export default class KeybasePGP extends KeybaseProfile {
   static route = {
     base: 'keybase/pgp',
     pattern: ':username',
   }
 
-  static examples = [
-    {
-      title: 'Keybase PGP',
-      namedParams: { username: 'skyplabs' },
-      staticPreview: this.render({ fingerprint: '1863145FD39EE07E' }),
+  static openApi = {
+    '/keybase/pgp/{username}': {
+      get: {
+        summary: 'Keybase PGP',
+        parameters: pathParams({
+          name: 'username',
+          example: 'skyplabs',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'pgp',
     color: 'informational',
+    namedLogo: 'keybase',
   }
 
   static render({ fingerprint }) {
     return {
       message: fingerprint.slice(-16).toUpperCase(),
+      style: 'social',
     }
   }
 
@@ -53,7 +58,7 @@ module.exports = class KeybasePGP extends KeybaseProfile {
 
   async handle({ username }) {
     const options = {
-      form: {
+      searchParams: {
         usernames: username,
         fields: 'public_keys',
       },

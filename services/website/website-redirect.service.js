@@ -1,7 +1,5 @@
-'use strict'
-
-const { escapeFormat } = require('../../core/badge-urls/path-helpers')
-const { redirector } = require('..')
+import { escapeFormat } from '../../core/badge-urls/path-helpers.js'
+import { redirector } from '../index.js'
 
 function escapeFormatSlashes(t) {
   return (
@@ -9,6 +7,31 @@ function escapeFormatSlashes(t) {
       // Double slash
       .replace(/\/\//g, '/')
   )
+}
+
+function splitDashSeparatedOptionalParams(s) {
+  const parts = []
+  let cur = ''
+  for (let i = 0; i < s.length;) {
+    const ch = s[i]
+    const next = s[i + 1]
+    if (ch === '-' && next === '-') {
+      cur += '-'
+      i += 2
+    } else if (ch === '/' && next === '/') {
+      cur += '/'
+      i += 2
+    } else if (ch === '-') {
+      parts.push(cur)
+      cur = ''
+      i += 1
+    } else {
+      cur += ch
+      i += 1
+    }
+  }
+  parts.push(cur)
+  return parts
 }
 
 /*
@@ -51,44 +74,28 @@ Old documentation, for reference:
 </p>
 */
 
-module.exports = [
+export default [
   redirector({
     category: 'monitoring',
     route: {
       base: '',
-      format:
-        'website-(([^-/]|--|//)+)-(([^-/]|--|//)+)(-(([^-/]|--|//)+)-(([^-/]|--|//)+))?/([^/]+)/(.+?)',
-      capture: [
-        // Some of these could be made into non-capturing groups so these unused
-        // params would not need to be declared.
-        'upMessage',
-        'unused2',
-        'downMessage',
-        'unused4',
-        'unused5',
-        'upColor',
-        'unused7',
-        'downColor',
-        'unused8',
-        'protocol',
-        'hostAndPath',
-      ],
+      pattern: 'website-:labels/:protocol/:hostAndPath+',
     },
     transformPath: () => '/website',
-    transformQueryParams: ({
-      upMessage,
-      downMessage,
-      upColor,
-      downColor,
-      protocol,
-      hostAndPath,
-    }) => ({
-      up_message: upMessage ? escapeFormatSlashes(upMessage) : undefined,
-      down_message: downMessage ? escapeFormatSlashes(downMessage) : undefined,
-      up_color: upColor,
-      down_color: downColor,
-      url: `${protocol}://${hostAndPath}`,
-    }),
+    transformQueryParams: ({ labels, protocol, hostAndPath }) => {
+      const parts = splitDashSeparatedOptionalParams(labels || '')
+      const [upMessage, downMessage, upColor, downColor] = parts
+
+      return {
+        up_message: upMessage ? escapeFormatSlashes(upMessage) : undefined,
+        down_message: downMessage
+          ? escapeFormatSlashes(downMessage)
+          : undefined,
+        up_color: upColor,
+        down_color: downColor,
+        url: `${protocol}://${hostAndPath}`,
+      }
+    },
     dateAdded: new Date('2019-03-08'),
   }),
   redirector({
@@ -96,8 +103,9 @@ module.exports = [
     name: 'WebsiteUrlQueryParamRedirect',
     route: {
       base: 'website',
-      pattern: ':protocol(https|http)/:hostAndPath+',
+      pattern: ':protocol/:hostAndPath+',
     },
+    routeEnum: ['https', 'http'],
     transformPath: () => '/website',
     transformQueryParams: ({ protocol, hostAndPath }) => ({
       url: `${protocol}://${hostAndPath}`,

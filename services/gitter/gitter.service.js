@@ -1,8 +1,6 @@
-'use strict'
+import { BaseStaticService, pathParams } from '../index.js'
 
-const { BaseStaticService } = require('..')
-
-module.exports = class Gitter extends BaseStaticService {
+export default class Gitter extends BaseStaticService {
   static category = 'chat'
 
   static route = {
@@ -10,16 +8,23 @@ module.exports = class Gitter extends BaseStaticService {
     pattern: ':user/:repo',
   }
 
-  static examples = [
-    {
-      title: 'Gitter',
-      namedParams: {
-        user: 'nwjs',
-        repo: 'nw.js',
+  static openApi = {
+    '/gitter/room/{user}/{repo}': {
+      get: {
+        summary: 'Gitter',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'nwjs',
+          },
+          {
+            name: 'repo',
+            example: 'nw.js',
+          },
+        ),
       },
-      staticPreview: this.render(),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'chat' }
 

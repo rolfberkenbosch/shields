@@ -1,15 +1,13 @@
-'use strict'
-
-const Joi = require('joi')
-const RouteBuilder = require('../route-builder')
-const { BaseJsonService, NotFound } = require('..')
-const {
-  renderVersionBadge,
+import Joi from 'joi'
+import RouteBuilder from '../route-builder.js'
+import { BaseJsonService, NotFound } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import {
   renderDownloadBadge,
   searchServiceUrl,
   stripBuildMetadata,
   selectVersion,
-} = require('./nuget-helpers')
+} from './nuget-helpers.js'
 
 /*
  * Build the Shields service URL object for the given service configuration. Return
@@ -58,12 +56,12 @@ const schema = Joi.object({
           .items(
             Joi.object({
               version: Joi.string().required(),
-            })
+            }),
           )
           .default([]),
         totalDownloads: Joi.number().integer(),
         totaldownloads: Joi.number().integer(),
-      })
+      }),
     )
     .max(1)
     .default([]),
@@ -74,14 +72,14 @@ const schema = Joi.object({
  */
 async function fetch(
   serviceInstance,
-  { baseUrl, packageName, includePrereleases = false }
+  { baseUrl, packageName, includePrereleases = false },
 ) {
   return serviceInstance._requestJson({
     schema,
     url: await searchServiceUrl(baseUrl, 'SearchQueryService'),
     options: {
-      qs: {
-        q: `packageid:${encodeURIComponent(packageName.toLowerCase())}`,
+      searchParams: {
+        q: `packageid:${packageName.toLowerCase()}`,
         // Include prerelease versions.
         prerelease: 'true',
         // Include packages with SemVer 2 version numbers.
@@ -123,14 +121,10 @@ function createServiceFamily({
       .push('(.+?)', 'packageName')
       .toObject()
 
-    static examples = []
+    static openApi = {}
 
     static defaultBadgeData = {
       label: defaultLabel,
-    }
-
-    static render(props) {
-      return renderVersionBadge(props)
     }
 
     /*
@@ -140,7 +134,7 @@ function createServiceFamily({
       if (json.data.length === 1 && json.data[0].versions.length > 0) {
         const { versions: packageVersions } = json.data[0]
         const versions = packageVersions.map(item =>
-          stripBuildMetadata(item.version)
+          stripBuildMetadata(item.version),
         )
         return selectVersion(versions, includePrereleases)
       } else {
@@ -160,7 +154,7 @@ function createServiceFamily({
       })
       const json = await fetch(this, { baseUrl, packageName })
       const version = this.transform({ json, includePrereleases })
-      return this.constructor.render({ version, feed })
+      return renderVersionBadge({ version, defaultLabel: feed })
     }
   }
 
@@ -172,7 +166,7 @@ function createServiceFamily({
       .push('(.+?)', 'packageName')
       .toObject()
 
-    static examples = []
+    static openApi = {}
 
     static render(props) {
       return renderDownloadBadge(props)
@@ -213,6 +207,4 @@ function createServiceFamily({
   }
 }
 
-module.exports = {
-  createServiceFamily,
-}
+export { createServiceFamily }

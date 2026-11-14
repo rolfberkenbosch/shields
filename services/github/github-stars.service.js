@@ -1,16 +1,15 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { GithubAuthV3Service } = require('./github-auth-service')
-const { documentation, errorMessagesFor } = require('./github-helpers')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger } from '../validators.js'
+import { GithubAuthV3Service } from './github-auth-service.js'
+import { documentation, httpErrorsFor } from './github-helpers.js'
 
 const schema = Joi.object({
   stargazers_count: nonNegativeInteger,
 }).required()
 
-module.exports = class GithubStars extends GithubAuthV3Service {
+export default class GithubStars extends GithubAuthV3Service {
   static category = 'social'
 
   static route = {
@@ -18,24 +17,18 @@ module.exports = class GithubStars extends GithubAuthV3Service {
     pattern: ':user/:repo',
   }
 
-  static examples = [
-    {
-      title: 'GitHub Repo stars',
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
+  static openApi = {
+    '/github/stars/{user}/{repo}': {
+      get: {
+        summary: 'GitHub Repo stars',
+        description: documentation,
+        parameters: pathParams(
+          { name: 'user', example: 'badges' },
+          { name: 'repo', example: 'shields' },
+        ),
       },
-      queryParams: { style: 'social' },
-      // TODO: This is currently a literal, as `staticPreview` doesn't
-      // support `link`.
-      staticPreview: {
-        label: 'Stars',
-        message: '7k',
-        style: 'social',
-      },
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'stars',
@@ -46,6 +39,7 @@ module.exports = class GithubStars extends GithubAuthV3Service {
     const slug = `${encodeURIComponent(user)}/${encodeURIComponent(repo)}`
     return {
       message: metric(stars),
+      style: 'social',
       color: 'blue',
       link: [
         `https://github.com/${slug}`,
@@ -58,7 +52,7 @@ module.exports = class GithubStars extends GithubAuthV3Service {
     const { stargazers_count: stars } = await this._requestJson({
       url: `/repos/${user}/${repo}`,
       schema,
-      errorMessages: errorMessagesFor(),
+      httpErrors: httpErrorsFor(),
     })
     return this.constructor.render({ user, repo, stars })
   }

@@ -1,13 +1,12 @@
-'use strict'
+import { ServiceTester } from '../tester.js'
 
-const { ServiceTester } = require('../tester')
-
-const t = (module.exports = new ServiceTester({
+export const t = new ServiceTester({
   id: 'OffsetEarthCarbonRedirect',
   title: 'Offset Earth (Carbon Offset) Redirector',
   pathPrefix: '/offset-earth',
-}))
+})
 
-t.create('Offset Earth carbon alias')
-  .get('/carbon/ecologi.svg')
-  .expectRedirect('/ecologi/carbon/ecologi.svg')
+t.create('Offset Earth carbon alias').get('/carbon/ecologi.json').expectBadge({
+  label: 'offset-earth',
+  message: 'https://github.com/badges/shields/pull/11583',
+})

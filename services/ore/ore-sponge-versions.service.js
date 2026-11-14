@@ -1,8 +1,7 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseOreService, description } from './ore-base.js'
 
-const { BaseOreService, documentation, keywords } = require('./ore-base')
-
-module.exports = class OreSpongeVersions extends BaseOreService {
+export default class OreSpongeVersions extends BaseOreService {
   static category = 'platform-support'
 
   static route = {
@@ -10,17 +9,18 @@ module.exports = class OreSpongeVersions extends BaseOreService {
     pattern: ':pluginId',
   }
 
-  static examples = [
-    {
-      title: 'Compatible versions (plugins on Ore)',
-      namedParams: {
-        pluginId: 'nucleus',
+  static openApi = {
+    '/ore/sponge-versions/{pluginId}': {
+      get: {
+        summary: 'Compatible versions (plugins on Ore)',
+        description,
+        parameters: pathParams({
+          name: 'pluginId',
+          example: 'nucleus',
+        }),
       },
-      staticPreview: this.render({ versions: ['7.3', '6.0'] }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'sponge',
@@ -34,9 +34,9 @@ module.exports = class OreSpongeVersions extends BaseOreService {
   }
 
   transform({ data }) {
-    const { promoted_versions } = data
+    const { promoted_versions: promotedVersions } = data
     return {
-      versions: promoted_versions
+      versions: promotedVersions
         .reduce((acc, { tags }) => acc.concat(tags), [])
         .filter(({ name }) => name.toLowerCase() === 'sponge')
         .map(({ display_data: displayData }) => displayData)

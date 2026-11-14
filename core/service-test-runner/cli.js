@@ -10,10 +10,10 @@
 //   echo "service1\nservice2\nservice3" | npm run test:services -- --stdin
 //
 // Run tests but skip tests which intercept requests:
-//   SKIP_INTERCEPTED=TRUE npm run test:services --
+//   SKIP_INTERCEPTED=true npm run test:services --
 //
 // Run tests on a given instance:
-//   SKIP_INTERCEPTED=TRUE TESTED_SERVER_URL=https://test.shields.io npm run test:services --
+//   SKIP_INTERCEPTED=true TESTED_SERVER_URL=https://test.shields.io npm run test:services --
 //
 // Run tests with given number of retries and backoff (in milliseconds):
 //   RETRY_COUNT=3 RETRY_BACKOFF=100 npm run test:services --
@@ -54,19 +54,32 @@
 //    Relying on npm scripts is safer. Using "pre" makes it impossible to run
 //    the second step without the first.
 
-'use strict'
+import fs from 'fs'
+import { parseArgs } from 'util'
+import { createTestServer } from '../server/in-process-server-test-helpers.js'
+import Runner from './runner.js'
 
-const minimist = require('minimist')
-const envFlag = require('node-env-flag')
-const readAllStdinSync = require('read-all-stdin-sync')
-const { createTestServer } = require('../server/in-process-server-test-helpers')
-const Runner = require('./runner')
-
-require('../unhandled-rejection.spec')
+import('../unhandled-rejection.spec.js')
 
 const retry = {}
 retry.count = parseInt(process.env.RETRY_COUNT) || 0
 retry.backoff = parseInt(process.env.RETRY_BACKOFF) || 0
+
+const { stdin: stdinOption, only: onlyOption } = parseArgs({
+  args: process.argv.slice(3),
+  options: { stdin: { type: 'boolean' }, only: { type: 'string' } },
+  strict: false,
+}).values
+let onlyServices
+if (stdinOption && onlyOption) {
+  console.error('Do not use --only with --stdin')
+} else if (stdinOption) {
+  const allStdin = fs.readFileSync(0, 'utf-8').trim()
+  onlyServices = allStdin ? allStdin.split('\n') : []
+} else if (onlyOption) {
+  onlyServices = onlyOption.split(',')
+}
+
 let baseUrl, server
 if (process.env.TESTED_SERVER_URL) {
   baseUrl = process.env.TESTED_SERVER_URL
@@ -81,7 +94,7 @@ if (process.env.TESTED_SERVER_URL) {
         },
       },
     })
-    server.start()
+    await server.start()
   })
   after('Shut down the server', async function () {
     if (server) {
@@ -90,30 +103,15 @@ if (process.env.TESTED_SERVER_URL) {
   })
 }
 
-const skipIntercepted = envFlag(process.env.SKIP_INTERCEPTED, false)
+const skipIntercepted = process.env.SKIP_INTERCEPTED === 'true'
 const runner = new Runner({ baseUrl, skipIntercepted, retry })
-runner.prepare()
+await runner.prepare()
 
 // The server's request cache causes side effects between tests.
 if (!process.env.TESTED_SERVER_URL) {
   runner.beforeEach = () => {
     server.reset()
   }
-}
-
-const args = minimist(process.argv.slice(3))
-const stdinOption = args.stdin
-const onlyOption = args.only
-
-let onlyServices
-
-if (stdinOption && onlyOption) {
-  console.error('Do not use --only with --stdin')
-} else if (stdinOption) {
-  const allStdin = readAllStdinSync().trim()
-  onlyServices = allStdin ? allStdin.split('\n') : []
-} else if (onlyOption) {
-  onlyServices = onlyOption.split(',')
 }
 
 if (typeof onlyServices === 'undefined' || onlyServices.includes('*****')) {
@@ -124,8 +122,8 @@ if (typeof onlyServices === 'undefined' || onlyServices.includes('*****')) {
 } else {
   console.info(
     `Running tests for ${onlyServices.length} services: ${onlyServices.join(
-      ', '
-    )}.\n`
+      ', ',
+    )}.\n`,
   )
   runner.only(onlyServices)
 }

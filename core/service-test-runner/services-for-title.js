@@ -1,9 +1,6 @@
-'use strict'
 /**
  * @module
  */
-
-const difference = require('lodash.difference')
 
 /**
  * Given a pull request title like
@@ -28,7 +25,7 @@ function servicesForTitle(title) {
   services = services.filter(Boolean).map(service => service.toLowerCase())
 
   const ignored = ['wip', 'rfc', 'security']
-  return difference(services, ignored)
+  return services.filter(service => !ignored.includes(service))
 }
 
-module.exports = servicesForTitle
+export default servicesForTitle

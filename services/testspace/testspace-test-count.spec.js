@@ -1,7 +1,5 @@
-'use strict'
-
-const { test, given } = require('sazerac')
-const TestspaceTestCount = require('./testspace-test-count.service')
+import { test, given } from 'sazerac'
+import TestspaceTestCount from './testspace-test-count.service.js'
 
 describe('TestspaceTestCount', function () {
   test(TestspaceTestCount.render, () => {
@@ -37,6 +35,11 @@ describe('TestspaceTestCount', function () {
     })
     given({ metric: 'skipped', value: 0 }).expect({
       label: 'skipped tests',
+      message: '0',
+      color: 'informational',
+    })
+    given({ metric: 'untested', value: 0 }).expect({
+      label: 'untested tests',
       message: '0',
       color: 'informational',
     })

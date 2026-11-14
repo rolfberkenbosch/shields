@@ -1,44 +1,38 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderDateBadge } from '../date.js'
+import { OpenVSXBase, description } from './open-vsx-base.js'
 
-const { age } = require('../color-formatters')
-const { formatDate } = require('../text-formatters')
-const OpenVSXBase = require('./open-vsx-base')
-
-module.exports = class OpenVSXReleaseDate extends OpenVSXBase {
+export default class OpenVSXReleaseDate extends OpenVSXBase {
   static category = 'activity'
 
   static route = {
-    base: 'open-vsx',
-    pattern: 'release-date/:namespace/:extension',
+    base: 'open-vsx/release-date',
+    pattern: ':namespace/:extension',
   }
 
-  static examples = [
-    {
-      title: 'Open VSX Release Date',
-      namedParams: {
-        namespace: 'redhat',
-        extension: 'java',
+  static openApi = {
+    '/open-vsx/release-date/{namespace}/{extension}': {
+      get: {
+        summary: 'Open VSX Release Date',
+        description,
+        parameters: pathParams(
+          {
+            name: 'namespace',
+            example: 'redhat',
+          },
+          {
+            name: 'extension',
+            example: 'java',
+          },
+        ),
       },
-      staticPreview: this.render({
-        releaseDate: '2020-10-15T13:40:16.986723Z',
-      }),
-      keywords: this.keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'release date' }
 
-  static render({ releaseDate }) {
-    return {
-      message: formatDate(releaseDate),
-      color: age(releaseDate),
-    }
-  }
-
   async handle({ namespace, extension }) {
     const { timestamp } = await this.fetch({ namespace, extension })
-    return this.constructor.render({
-      releaseDate: timestamp,
-    })
+    return renderDateBadge(timestamp)
   }
 }

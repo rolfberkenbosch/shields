@@ -1,20 +1,20 @@
-'use strict'
+import { renderVersionBadge } from '../version.js'
+import { pathParams } from '../index.js'
+import { BaseAmoService, description } from './amo-base.js'
 
-const { renderVersionBadge } = require('../version')
-const { BaseAmoService, keywords } = require('./amo-base')
-
-module.exports = class AmoVersion extends BaseAmoService {
+export default class AmoVersion extends BaseAmoService {
   static category = 'version'
   static route = { base: 'amo/v', pattern: ':addonId' }
 
-  static examples = [
-    {
-      title: 'Mozilla Add-on',
-      namedParams: { addonId: 'dustman' },
-      staticPreview: renderVersionBadge({ version: '2.1.0' }),
-      keywords,
+  static openApi = {
+    '/amo/v/{addonId}': {
+      get: {
+        summary: 'Mozilla Add-on Version',
+        description,
+        parameters: pathParams({ name: 'addonId', example: 'dustman' }),
+      },
     },
-  ]
+  }
 
   async handle({ addonId }) {
     const data = await this.fetch({ addonId })

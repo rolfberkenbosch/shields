@@ -1,24 +1,36 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { schema, periodMap, BaseJsDelivrService } from './jsdelivr-base.js'
 
-const { schema, periodMap, BaseJsDelivrService } = require('./jsdelivr-base')
-
-module.exports = class JsDelivrHitsGitHub extends BaseJsDelivrService {
+export default class JsDelivrHitsGitHub extends BaseJsDelivrService {
   static route = {
     base: 'jsdelivr/gh',
-    pattern: ':period(hd|hw|hm|hy)/:user/:repo',
+    pattern: ':period/:user/:repo',
   }
+  static routeEnum = ['hd', 'hw', 'hm', 'hy']
 
-  static examples = [
-    {
-      title: 'jsDelivr hits (GitHub)',
-      namedParams: {
-        period: 'hm',
-        user: 'jquery',
-        repo: 'jquery',
+  static openApi = {
+    '/jsdelivr/gh/{period}/{user}/{repo}': {
+      get: {
+        summary: 'jsDelivr hits (GitHub)',
+        parameters: pathParams(
+          {
+            name: 'period',
+            example: 'hm',
+            schema: { type: 'string', enum: this.getEnum('period') },
+            description: 'Hits per Day, Week, Month or Year',
+          },
+          {
+            name: 'user',
+            example: 'jquery',
+          },
+          {
+            name: 'repo',
+            example: 'jquery',
+          },
+        ),
       },
-      staticPreview: this.render({ period: 'hm', hits: 9809876 }),
     },
-  ]
+  }
 
   async fetch({ period, user, repo }) {
     return this._requestJson({

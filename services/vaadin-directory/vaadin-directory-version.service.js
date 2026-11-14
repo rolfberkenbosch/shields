@@ -1,27 +1,27 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { BaseVaadinDirectoryService } from './vaadin-directory-base.js'
 
-const { renderVersionBadge } = require('../version')
-const { BaseVaadinDirectoryService } = require('./vaadin-directory-base')
-
-module.exports = class VaadinDirectoryVersion extends (
-  BaseVaadinDirectoryService
-) {
+export default class VaadinDirectoryVersion extends BaseVaadinDirectoryService {
   static category = 'version'
 
   static route = {
     base: 'vaadin-directory',
-    pattern: ':alias(v|version)/:packageName',
+    pattern: ':alias/:packageName',
   }
+  static routeEnum = ['v', 'version']
 
-  static examples = [
-    {
-      title: 'Vaadin Directory',
-      pattern: 'v/:packageName',
-      namedParams: { packageName: 'vaadinvaadin-grid' },
-      staticPreview: renderVersionBadge({ version: 'v5.3.0-alpha4' }),
-      keywords: ['vaadin-directory', 'latest'],
+  static openApi = {
+    '/vaadin-directory/v/{packageName}': {
+      get: {
+        summary: 'Vaadin Directory Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'vaadinvaadin-grid',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'vaadin directory',

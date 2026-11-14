@@ -1,15 +1,13 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { optionalUrl } = require('../validators')
-const {
-  keywords,
+import Joi from 'joi'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger, optionalUrl } from '../validators.js'
+import { pathParam, queryParam } from '../index.js'
+import {
   BasePackagistService,
   customServerDocumentationFragment,
   cacheDocumentationFragment,
-} = require('./packagist-base')
+  description,
+} from './packagist-base.js'
 
 const schema = Joi.object({
   package: Joi.object({
@@ -21,7 +19,7 @@ const queryParamSchema = Joi.object({
   server: optionalUrl,
 }).required()
 
-module.exports = class PackagistStars extends BasePackagistService {
+export default class PackagistStars extends BasePackagistService {
   static category = 'rating'
 
   static route = {
@@ -30,34 +28,29 @@ module.exports = class PackagistStars extends BasePackagistService {
     queryParamSchema,
   }
 
-  static examples = [
-    {
-      title: 'Packagist Stars',
-      namedParams: {
-        user: 'guzzlehttp',
-        repo: 'guzzle',
+  static openApi = {
+    '/packagist/stars/{user}/{repo}': {
+      get: {
+        summary: 'Packagist Stars',
+        description: description + cacheDocumentationFragment,
+        parameters: [
+          pathParam({
+            name: 'user',
+            example: 'guzzlehttp',
+          }),
+          pathParam({
+            name: 'repo',
+            example: 'guzzle',
+          }),
+          queryParam({
+            name: 'server',
+            description: customServerDocumentationFragment,
+            example: 'https://packagist.org',
+          }),
+        ],
       },
-      staticPreview: this.render({
-        stars: 1000,
-      }),
-      keywords,
-      documentation: cacheDocumentationFragment,
     },
-    {
-      title: 'Packagist Stars (custom server)',
-      namedParams: {
-        user: 'guzzlehttp',
-        repo: 'guzzle',
-      },
-      staticPreview: this.render({
-        stars: 1000,
-      }),
-      queryParams: { server: 'https://packagist.org' },
-      keywords,
-      documentation:
-        customServerDocumentationFragment + cacheDocumentationFragment,
-    },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'stars',

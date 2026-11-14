@@ -1,7 +1,6 @@
-'use strict'
-
-const { isVPlusDottedVersionNClauses } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isVPlusDottedVersionNClauses } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('version (user friendly plugin id)')
   .get('/1347-scala.json')
@@ -27,7 +26,7 @@ t.create('version (numeric id)')
   .intercept(nock =>
     nock('https://plugins.jetbrains.com')
       .get('/api/plugins/9435/updates')
-      .reply(200, [{ version: '1.0' }])
+      .reply(200, [{ version: '1.0' }]),
   )
   .expectBadge({ label: 'jetbrains plugin', message: 'v1.0' })
 
@@ -46,11 +45,11 @@ t.create('version (strong id)')
                   <version>1.0</version>
                 </idea-plugin>
               </category>
-            </plugin-repository>`
+            </plugin-repository>`,
         ),
     {
       'Content-Type': 'text/xml;charset=UTF-8',
-    }
+    },
   )
   .expectBadge({ label: 'jetbrains plugin', message: 'v1.0' })
 

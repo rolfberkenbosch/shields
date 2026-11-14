@@ -1,7 +1,6 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
-const { isMetric } = require('../test-validators')
+import { createServiceTester } from '../tester.js'
+import { isMetric } from '../test-validators.js'
+export const t = await createServiceTester()
 
 t.create('Contributors').get('/contributors/badges/shields.json').expectBadge({
   label: 'contributors',
@@ -20,4 +19,13 @@ t.create('Contributors (repo not found)')
   .expectBadge({
     label: 'contributors',
     message: 'repo not found',
+  })
+
+t.create('Contributors (too many to compute)')
+  .timeout(20000)
+  .get('/contributors/NixOS/nixpkgs.json')
+  .expectBadge({
+    label: 'contributors',
+    message: 'repository too large',
+    color: 'lightgrey',
   })

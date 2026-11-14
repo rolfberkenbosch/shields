@@ -1,7 +1,6 @@
-'use strict'
-
-const { isMetric } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isMetric } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('dependent repo count')
   .timeout(10000)
@@ -14,6 +13,14 @@ t.create('dependent repo count')
 t.create('dependent repo count (scoped npm package)')
   .timeout(10000)
   .get('/npm/@babel/core.json')
+  .expectBadge({
+    label: 'dependent repos',
+    message: isMetric,
+  })
+
+t.create('dependent repo count (package name containing slashes)')
+  .timeout(10000)
+  .get('/go/github.com/ipfs/kubo.json')
   .expectBadge({
     label: 'dependent repos',
     message: isMetric,

@@ -1,13 +1,15 @@
-'use strict'
+import { isMetric } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
-const { isMetric } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
-
-t.create('Followers').get('/webcaetano.json').expectBadge({
-  label: 'followers',
-  message: isMetric,
-  color: 'blue',
-})
+t.create('Followers')
+  .get('/webcaetano.json')
+  .expectBadge({
+    label: 'followers',
+    message: isMetric,
+    color: 'blue',
+    link: ['https://github.com/webcaetano?tab=followers'],
+  })
 
 t.create('Followers (user not found)').get('/PyvesB2.json').expectBadge({
   label: 'followers',

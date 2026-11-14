@@ -1,9 +1,8 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseGithubLanguage } from './github-languages-base.js'
+import { documentation } from './github-helpers.js'
 
-const { BaseGithubLanguage } = require('./github-languages-base')
-const { documentation } = require('./github-helpers')
-
-module.exports = class GithubTopLanguage extends BaseGithubLanguage {
+export default class GithubTopLanguage extends BaseGithubLanguage {
   static category = 'analysis'
 
   static route = {
@@ -11,21 +10,24 @@ module.exports = class GithubTopLanguage extends BaseGithubLanguage {
     pattern: ':user/:repo',
   }
 
-  static examples = [
-    {
-      title: 'GitHub top language',
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
+  static openApi = {
+    '/github/languages/top/{user}/{repo}': {
+      get: {
+        summary: 'GitHub top language',
+        description: documentation,
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'badges',
+          },
+          {
+            name: 'repo',
+            example: 'shields',
+          },
+        ),
       },
-      staticPreview: this.render({
-        language: 'javascript',
-        languageSize: 99.5,
-        totalSize: 100,
-      }),
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'language',
@@ -43,7 +45,7 @@ module.exports = class GithubTopLanguage extends BaseGithubLanguage {
     const data = await this.fetch({ user, repo })
     const language = Object.keys(data).reduce(
       (a, b) => (data[a] > data[b] ? a : b),
-      'language'
+      'language',
     )
     return this.constructor.render({
       language,

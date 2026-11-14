@@ -1,10 +1,9 @@
-'use strict'
+import Joi from 'joi'
+import { nonNegativeInteger } from '../validators.js'
+import { BaseJsonService } from '../index.js'
 
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const { BaseJsonService } = require('..')
-
-const keywords = ['amo', 'firefox']
+const description =
+  '[addons.mozilla.org](https://addons.mozilla.org) (AMO) publishes extensions for Mozilla Firefox'
 
 const schema = Joi.object({
   average_daily_users: nonNegativeInteger,
@@ -23,9 +22,9 @@ class BaseAmoService extends BaseJsonService {
   async fetch({ addonId }) {
     return this._requestJson({
       schema,
-      url: `https://addons.mozilla.org/api/v3/addons/addon/${addonId}`,
+      url: `https://addons.mozilla.org/api/v4/addons/addon/${addonId}/`,
     })
   }
 }
 
-module.exports = { BaseAmoService, keywords }
+export { BaseAmoService, description }

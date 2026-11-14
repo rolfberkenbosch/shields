@@ -1,7 +1,5 @@
-'use strict'
-
-const { BaseXmlService, NotFound } = require('..')
-const { parseJson } = require('../../core/base-service/json')
+import { BaseXmlService, NotFound } from '../index.js'
+import { parseJson } from '../../core/base-service/json.js'
 
 /*
 JetBrains is a bit awkward. Sometimes we want to call an XML API
@@ -10,7 +8,7 @@ When the legacy IntelliJ (XML) API is retired we can simplify all this and
 switch JetbrainsDownloads, JetbrainsRating and JetbrainsVersion to just
 inherit from BaseJsonService directly.
 */
-module.exports = class JetbrainsBase extends BaseXmlService {
+export default class JetbrainsBase extends BaseXmlService {
   static _isLegacyPluginId(pluginId) {
     return !pluginId.match(/^([0-9])+/)
   }
@@ -37,7 +35,7 @@ module.exports = class JetbrainsBase extends BaseXmlService {
 
   async fetchIntelliJPluginData({ pluginId, schema }) {
     const parserOptions = {
-      parseNodeValue: false,
+      parseTagValue: false,
       ignoreAttributes: false,
     }
     return this._requestXml({
@@ -56,7 +54,7 @@ module.exports = class JetbrainsBase extends BaseXmlService {
     return super._validate(data, schema)
   }
 
-  async _requestJson({ schema, url, options = {}, errorMessages = {} }) {
+  async _requestJson({ schema, url, options = {}, httpErrors = {} }) {
     const mergedOptions = {
       ...{ headers: { Accept: 'application/json' } },
       ...options,
@@ -64,7 +62,7 @@ module.exports = class JetbrainsBase extends BaseXmlService {
     const { buffer } = await this._request({
       url,
       options: mergedOptions,
-      errorMessages,
+      httpErrors,
     })
     const json = this._parseJson(buffer)
     return this.constructor._validateJson(json, schema)

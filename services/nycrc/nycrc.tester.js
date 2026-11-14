@@ -1,7 +1,6 @@
-'use strict'
-
-const { isIntegerPercentage } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isIntegerPercentage } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('valid .nycrc')
   .get('/yargs/yargs.json?config=.nycrc')
@@ -31,10 +30,10 @@ t.create('.nycrc in monorepo')
         content: Buffer.from(
           JSON.stringify({
             lines: 99,
-          })
+          }),
         ).toString('base64'),
         encoding: 'base64',
-      })
+      }),
   )
   .expectBadge({ label: 'min coverage', message: isIntegerPercentage })
 
@@ -47,10 +46,10 @@ t.create('.nycrc with no thresholds')
         content: Buffer.from(
           JSON.stringify({
             reporter: 'foo',
-          })
+          }),
         ).toString('base64'),
         encoding: 'base64',
-      })
+      }),
   )
   .expectBadge({
     label: 'min coverage',
@@ -68,10 +67,10 @@ t.create('package.json with nyc stanza')
             nyc: {
               lines: 99,
             },
-          })
+          }),
         ).toString('base64'),
         encoding: 'base64',
-      })
+      }),
   )
   .expectBadge({ label: 'min coverage', message: isIntegerPercentage })
 
@@ -84,10 +83,10 @@ t.create('package.json with nyc stanza, but no thresholds')
         content: Buffer.from(
           JSON.stringify({
             nyc: {},
-          })
+          }),
         ).toString('base64'),
         encoding: 'base64',
-      })
+      }),
   )
   .expectBadge({
     label: 'min coverage',

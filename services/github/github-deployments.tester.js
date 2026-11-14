@@ -1,7 +1,6 @@
-'use strict'
-
-const Joi = require('joi')
-const t = (module.exports = require('../tester').createServiceTester())
+import Joi from 'joi'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 const validMessages = [
   'success',
@@ -38,7 +37,7 @@ t.create('Deployments (status not yet available)')
         data: {
           repository: { deployments: { nodes: [{ latestStatus: null }] } },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'state',

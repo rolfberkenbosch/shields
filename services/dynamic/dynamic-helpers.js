@@ -1,10 +1,8 @@
-'use strict'
-
-const Joi = require('joi')
-const { optionalUrl } = require('../validators')
+import Joi from 'joi'
+import { url } from '../validators.js'
 
 const queryParamSchema = Joi.object({
-  url: optionalUrl.required(),
+  url,
   query: Joi.string().required(),
   prefix: Joi.alternatives().try(Joi.string(), Joi.number()),
   suffix: Joi.alternatives().try(Joi.string(), Joi.number()),
@@ -20,6 +18,4 @@ function createRoute(which) {
   }
 }
 
-module.exports = {
-  createRoute,
-}
+export { createRoute }

@@ -1,16 +1,15 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { GithubAuthV3Service } = require('./github-auth-service')
-const { documentation, errorMessagesFor } = require('./github-helpers')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger } from '../validators.js'
+import { GithubAuthV3Service } from './github-auth-service.js'
+import { documentation, httpErrorsFor } from './github-helpers.js'
 
 const schema = Joi.object({
   subscribers_count: nonNegativeInteger,
 }).required()
 
-module.exports = class GithubWatchers extends GithubAuthV3Service {
+export default class GithubWatchers extends GithubAuthV3Service {
   static category = 'social'
 
   static route = {
@@ -18,24 +17,18 @@ module.exports = class GithubWatchers extends GithubAuthV3Service {
     pattern: ':user/:repo',
   }
 
-  static examples = [
-    {
-      title: 'GitHub watchers',
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
+  static openApi = {
+    '/github/watchers/{user}/{repo}': {
+      get: {
+        summary: 'GitHub watchers',
+        description: documentation,
+        parameters: pathParams(
+          { name: 'user', example: 'badges' },
+          { name: 'repo', example: 'shields' },
+        ),
       },
-      // TODO: This is currently a literal, as `staticPreview` doesn't
-      // support `link`.
-      staticPreview: {
-        label: 'Watch',
-        message: '96',
-        style: 'social',
-      },
-      queryParams: { label: 'Watch' },
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'watchers',
@@ -45,6 +38,7 @@ module.exports = class GithubWatchers extends GithubAuthV3Service {
   static render({ watchers, user, repo }) {
     return {
       message: metric(watchers),
+      style: 'social',
       color: 'blue',
       link: [
         `https://github.com/${user}/${repo}`,
@@ -57,7 +51,7 @@ module.exports = class GithubWatchers extends GithubAuthV3Service {
     const { subscribers_count: watchers } = await this._requestJson({
       url: `/repos/${user}/${repo}`,
       schema,
-      errorMessages: errorMessagesFor(),
+      httpErrors: httpErrorsFor(),
     })
     return this.constructor.render({ user, repo, watchers })
   }

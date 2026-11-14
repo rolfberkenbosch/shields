@@ -1,11 +1,10 @@
-'use strict'
-
-const { isFileSize } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isIecFileSize } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('repository size').get('/badges/shields.json').expectBadge({
   label: 'repo size',
-  message: isFileSize,
+  message: isIecFileSize,
 })
 
 t.create('repository size (repo not found)')

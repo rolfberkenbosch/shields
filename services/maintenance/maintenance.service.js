@@ -1,8 +1,6 @@
-'use strict'
+import { BaseService, pathParams } from '../index.js'
 
-const { BaseService } = require('..')
-
-module.exports = class Maintenance extends BaseService {
+export default class Maintenance extends BaseService {
   static category = 'other'
 
   static route = {
@@ -10,18 +8,23 @@ module.exports = class Maintenance extends BaseService {
     pattern: ':maintained/:year(\\d{4})',
   }
 
-  static examples = [
-    {
-      title: 'Maintenance',
-      pattern: ':maintained(yes|no)/:year',
-      namedParams: {
-        maintained: 'yes',
-        year: '2019',
+  static openApi = {
+    '/maintenance/{maintained}/{year}': {
+      get: {
+        summary: 'Maintenance',
+        parameters: pathParams(
+          {
+            name: 'maintained',
+            example: 'yes',
+          },
+          {
+            name: 'year',
+            example: '2019',
+          },
+        ),
       },
-      staticPreview: this.render({ isMaintained: false, targetYear: '2018' }),
-      keywords: ['maintained'],
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'maintained',
@@ -36,7 +39,7 @@ module.exports = class Maintenance extends BaseService {
     }
 
     return {
-      message: `${isStale ? `stale` : 'no!'} (as of ${targetYear})`,
+      message: `${isStale ? 'stale' : 'no!'} (as of ${targetYear})`,
       color: isStale ? undefined : 'red',
     }
   }

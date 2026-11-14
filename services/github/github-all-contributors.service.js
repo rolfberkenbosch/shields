@@ -1,36 +1,68 @@
-'use strict'
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { renderContributorBadge } from '../contributor-count.js'
+import { ConditionalGithubAuthV3Service } from './github-auth-service.js'
+import { fetchJsonFromRepo } from './github-common-fetch.js'
+import { documentation as commonDocumentation } from './github-helpers.js'
 
-const Joi = require('joi')
-const { renderContributorBadge } = require('../contributor-count')
-const { ConditionalGithubAuthV3Service } = require('./github-auth-service')
-const { fetchJsonFromRepo } = require('./github-common-fetch')
-const { documentation } = require('./github-helpers')
+const description = `
+The All Contributors service allows you to recognize all your project
+contributors, including those that don't push code. See
+[https://allcontributors.org](https://allcontributors.org)
+for more information.
+
+${commonDocumentation}
+`
 
 const schema = Joi.object({
   contributors: Joi.array().required(),
 }).required()
 
-module.exports = class GithubAllContributorsService extends (
-  ConditionalGithubAuthV3Service
-) {
+export default class GithubAllContributorsService extends ConditionalGithubAuthV3Service {
   static category = 'activity'
   static route = {
     base: 'github/all-contributors',
     pattern: ':user/:repo/:branch*',
   }
 
-  static examples = [
-    {
-      title: 'Github All Contributors',
-      namedParams: {
-        repo: 'all-contributors',
-        user: 'all-contributors',
-        branch: 'master',
+  static openApi = {
+    '/github/all-contributors/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'GitHub contributors from allcontributors.org (with branch)',
+        description,
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'all-contributors',
+          },
+          {
+            name: 'repo',
+            example: 'all-contributors',
+          },
+          {
+            name: 'branch',
+            example: 'master',
+          },
+        ),
       },
-      staticPreview: this.render({ contributorCount: 66 }),
-      documentation,
     },
-  ]
+    '/github/all-contributors/{user}/{repo}': {
+      get: {
+        summary: 'GitHub contributors from allcontributors.org',
+        description,
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'all-contributors',
+          },
+          {
+            name: 'repo',
+            example: 'all-contributors',
+          },
+        ),
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'all contributors' }
 

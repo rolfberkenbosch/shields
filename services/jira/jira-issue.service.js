@@ -1,12 +1,10 @@
-'use strict'
-
-const Joi = require('joi')
-const { optionalUrl } = require('../validators')
-const { BaseJsonService } = require('..')
-const { authConfig } = require('./jira-common')
+import Joi from 'joi'
+import { url } from '../validators.js'
+import { BaseJsonService, pathParam, queryParam } from '../index.js'
+import { authConfig } from './jira-common.js'
 
 const queryParamSchema = Joi.object({
-  baseUrl: optionalUrl.required(),
+  baseUrl: url,
 }).required()
 
 const schema = Joi.object({
@@ -20,7 +18,7 @@ const schema = Joi.object({
   }).required(),
 }).required()
 
-module.exports = class JiraIssue extends BaseJsonService {
+export default class JiraIssue extends BaseJsonService {
   static category = 'issue-tracking'
 
   static route = {
@@ -31,22 +29,24 @@ module.exports = class JiraIssue extends BaseJsonService {
 
   static auth = authConfig
 
-  static examples = [
-    {
-      title: 'JIRA issue',
-      namedParams: {
-        issueKey: 'KAFKA-2896',
+  static openApi = {
+    '/jira/issue/{issueKey}': {
+      get: {
+        summary: 'JIRA issue',
+        parameters: [
+          pathParam({
+            name: 'issueKey',
+            example: 'KAFKA-2896',
+          }),
+          queryParam({
+            name: 'baseUrl',
+            example: 'https://issues.apache.org/jira',
+            required: true,
+          }),
+        ],
       },
-      queryParams: {
-        baseUrl: 'https://issues.apache.org/jira',
-      },
-      staticPreview: this.render({
-        issueKey: 'KAFKA-2896',
-        statusName: 'Resolved',
-        statusColor: 'green',
-      }),
     },
-  ]
+  }
 
   static defaultBadgeData = { color: 'lightgrey', label: 'jira' }
 
@@ -77,8 +77,8 @@ module.exports = class JiraIssue extends BaseJsonService {
       this.authHelper.withBasicAuth({
         schema,
         url: `${baseUrl}/rest/api/2/issue/${encodeURIComponent(issueKey)}`,
-        errorMessages: { 404: 'issue not found' },
-      })
+        httpErrors: { 404: 'issue not found' },
+      }),
     )
 
     const issueStatus = json.fields.status

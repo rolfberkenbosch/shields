@@ -1,21 +1,23 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '../version.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.string().required()
 
-module.exports = class DubVersion extends BaseJsonService {
+export default class DubVersion extends BaseJsonService {
   static category = 'version'
   static route = { base: 'dub/v', pattern: ':packageName' }
-  static examples = [
-    {
-      title: 'DUB',
-      namedParams: { packageName: 'vibe-d' },
-      staticPreview: renderVersionBadge({ version: 'v0.8.4' }),
+  static openApi = {
+    '/dub/v/{packageName}': {
+      get: {
+        summary: 'DUB Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'vibe-d',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'dub' }
 

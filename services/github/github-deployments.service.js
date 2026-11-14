@@ -1,15 +1,13 @@
-'use strict'
-
-const gql = require('graphql-tag')
-const Joi = require('joi')
-const { NotFound } = require('..')
-const { GithubAuthV4Service } = require('./github-auth-service')
-const { documentation, transformErrors } = require('./github-helpers')
+import gql from 'graphql-tag'
+import Joi from 'joi'
+import { NotFound, pathParams } from '../index.js'
+import { GithubAuthV4Service } from './github-auth-service.js'
+import { documentation, transformErrors } from './github-helpers.js'
 
 const greenStates = ['SUCCESS']
 const redStates = ['ERROR', 'FAILURE']
 const blueStates = ['INACTIVE']
-const otherStates = ['IN_PROGRESS', 'QUEUED', 'PENDING', 'NO_STATUS']
+const otherStates = ['IN_PROGRESS', 'QUEUED', 'PENDING', 'NO_STATUS', 'WAITING']
 
 const stateToMessageMappings = {
   IN_PROGRESS: 'in progress',
@@ -36,7 +34,7 @@ const schema = Joi.object({
                 }),
                 null,
               ]),
-            })
+            }),
           )
           .required(),
       }).required(),
@@ -44,27 +42,35 @@ const schema = Joi.object({
   }).required(),
 }).required()
 
-module.exports = class GithubDeployments extends GithubAuthV4Service {
+export default class GithubDeployments extends GithubAuthV4Service {
   static category = 'other'
   static route = {
     base: 'github/deployments',
     pattern: ':user/:repo/:environment',
   }
 
-  static examples = [
-    {
-      title: 'GitHub deployments',
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
-        environment: 'shields-staging',
+  static openApi = {
+    '/github/deployments/{user}/{repo}/{environment}': {
+      get: {
+        summary: 'GitHub deployments',
+        description: documentation,
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'badges',
+          },
+          {
+            name: 'repo',
+            example: 'shields',
+          },
+          {
+            name: 'environment',
+            example: 'shields-staging',
+          },
+        ),
       },
-      staticPreview: this.render({
-        state: 'success',
-      }),
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'state' }
 
@@ -92,7 +98,7 @@ module.exports = class GithubDeployments extends GithubAuthV4Service {
   async fetch({ user, repo, environment }) {
     return this._requestGraphql({
       query: gql`
-        query($user: String!, $repo: String!, $environment: String!) {
+        query ($user: String!, $repo: String!, $environment: String!) {
           repository(owner: $user, name: $repo) {
             deployments(last: 1, environments: [$environment]) {
               nodes {
@@ -124,7 +130,7 @@ module.exports = class GithubDeployments extends GithubAuthV4Service {
     return { state }
   }
 
-  async handle({ user, repo, environment }, queryParams) {
+  async handle({ user, repo, environment }) {
     const json = await this.fetch({ user, repo, environment })
     const { state } = this.transform({ data: json.data })
     return this.constructor.render({ state })

@@ -1,11 +1,8 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { BasePuppetForgeModulesService } from './puppetforge-base.js'
 
-const { renderVersionBadge } = require('../version')
-const { BasePuppetForgeModulesService } = require('./puppetforge-base')
-
-module.exports = class PuppetforgeModuleVersion extends (
-  BasePuppetForgeModulesService
-) {
+export default class PuppetforgeModuleVersion extends BasePuppetForgeModulesService {
   static category = 'version'
 
   static route = {
@@ -13,16 +10,23 @@ module.exports = class PuppetforgeModuleVersion extends (
     pattern: ':user/:moduleName',
   }
 
-  static examples = [
-    {
-      title: 'Puppet Forge version',
-      namedParams: {
-        user: 'vStone',
-        moduleName: 'percona',
+  static openApi = {
+    '/puppetforge/v/{user}/{moduleName}': {
+      get: {
+        summary: 'Puppet Forge version',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'vStone',
+          },
+          {
+            name: 'moduleName',
+            example: 'percona',
+          },
+        ),
       },
-      staticPreview: renderVersionBadge({ version: '1.3.3' }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'puppetforge' }
 

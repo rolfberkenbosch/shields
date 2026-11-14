@@ -1,16 +1,19 @@
-'use strict'
+import { ServiceTester } from '../tester.js'
 
-const Joi = require('joi')
-const { isBuildStatus } = require('../build-status')
-const t = (module.exports = require('../tester').createServiceTester())
+export const t = new ServiceTester({
+  id: 'cirrus',
+  title: 'Cirrus CI',
+  pathPrefix: '/cirrus',
+})
 
-t.create('cirrus bad repo')
-  .get('/github/unknown-identifier/unknown-repo.json')
-  .expectBadge({ label: 'build', message: 'unknown' })
+t.create('default branch').get('/github/flutter/flutter.json').expectBadge({
+  label: 'build',
+  message: 'retired badge',
+})
 
-t.create('cirrus fully.valid')
-  .get('/github/flutter/flutter.json')
+t.create('specific branch')
+  .get('/github/flutter/flutter/master.json')
   .expectBadge({
     label: 'build',
-    message: Joi.alternatives().try(isBuildStatus, Joi.equal('unknown')),
+    message: 'retired badge',
   })

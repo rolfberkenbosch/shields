@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const KeybaseProfile = require('./keybase-profile')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { nonNegativeInteger } from '../validators.js'
+import KeybaseProfile from './keybase-profile.js'
 
 const bitcoinAddressSchema = Joi.object({
   status: Joi.object({
@@ -15,44 +14,47 @@ const bitcoinAddressSchema = Joi.object({
           bitcoin: Joi.array().items(
             Joi.object({
               address: Joi.string().required(),
-            }).required()
+            }).required(),
           ),
         })
           .required()
           .allow(null),
       })
         .required()
-        .allow(null)
+        .allow(null),
     )
     .min(0)
     .max(1),
 }).required()
 
-module.exports = class KeybaseBTC extends KeybaseProfile {
+export default class KeybaseBTC extends KeybaseProfile {
   static route = {
     base: 'keybase/btc',
     pattern: ':username',
   }
 
-  static examples = [
-    {
-      title: 'Keybase BTC',
-      namedParams: { username: 'skyplabs' },
-      staticPreview: this.render({
-        address: '12ufRLmbEmgjsdGzhUUFY4pcfiQZyRPV9J',
-      }),
-      keywords: ['bitcoin'],
+  static openApi = {
+    '/keybase/btc/{username}': {
+      get: {
+        summary: 'Keybase BTC',
+        parameters: pathParams({
+          name: 'username',
+          example: 'skyplabs',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'btc',
     color: 'informational',
+    namedLogo: 'keybase',
   }
 
   static render({ address }) {
     return {
       message: address,
+      style: 'social',
     }
   }
 
@@ -60,7 +62,7 @@ module.exports = class KeybaseBTC extends KeybaseProfile {
 
   async handle({ username }) {
     const options = {
-      form: {
+      searchParams: {
         usernames: username,
         fields: 'cryptocurrency_addresses',
       },

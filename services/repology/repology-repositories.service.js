@@ -1,15 +1,13 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { BaseSvgScrapingService } = require('..')
+import Joi from 'joi'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger } from '../validators.js'
+import { BaseSvgScrapingService, pathParams } from '../index.js'
 
 const schema = Joi.object({
   message: nonNegativeInteger,
 }).required()
 
-module.exports = class RepologyRepositories extends BaseSvgScrapingService {
+export default class RepologyRepositories extends BaseSvgScrapingService {
   static category = 'platform-support'
 
   static route = {
@@ -17,13 +15,17 @@ module.exports = class RepologyRepositories extends BaseSvgScrapingService {
     pattern: ':projectName',
   }
 
-  static examples = [
-    {
-      title: 'Repology - Repositories',
-      namedParams: { projectName: 'starship' },
-      staticPreview: this.render({ repositoryCount: '18' }),
+  static openApi = {
+    '/repology/repositories/{projectName}': {
+      get: {
+        summary: 'Repology - Repositories',
+        parameters: pathParams({
+          name: 'projectName',
+          example: 'starship',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'repositories',

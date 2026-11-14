@@ -1,32 +1,30 @@
-'use strict'
+import { pathParam, queryParam } from '../index.js'
+import { renderContributorBadge } from '../contributor-count.js'
+import NpmBase, { packageNameDescription } from './npm-base.js'
 
-const { renderContributorBadge } = require('../contributor-count')
-const NpmBase = require('./npm-base')
-
-const keywords = ['node']
-
-module.exports = class NpmCollaborators extends NpmBase {
+export default class NpmCollaborators extends NpmBase {
   static category = 'activity'
 
   static route = this.buildRoute('npm/collaborators', { withTag: false })
 
-  static examples = [
-    {
-      title: 'npm collaborators',
-      pattern: ':packageName',
-      namedParams: { packageName: 'prettier' },
-      staticPreview: this.render({ collaborators: 6 }),
-      keywords,
+  static openApi = {
+    '/npm/collaborators/{packageName}': {
+      get: {
+        summary: 'NPM Collaborators',
+        parameters: [
+          pathParam({
+            name: 'packageName',
+            example: 'prettier',
+            description: packageNameDescription,
+          }),
+          queryParam({
+            name: 'registry_uri',
+            example: 'https://registry.npmjs.com',
+          }),
+        ],
+      },
     },
-    {
-      title: 'npm collaborators',
-      pattern: ':packageName',
-      namedParams: { packageName: 'prettier' },
-      queryParams: { registry_uri: 'https://registry.npmjs.com' },
-      staticPreview: this.render({ collaborators: 6 }),
-      keywords,
-    },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'npm collaborators',
@@ -39,7 +37,7 @@ module.exports = class NpmCollaborators extends NpmBase {
   async handle(namedParams, queryParams) {
     const { scope, packageName, registryUrl } = this.constructor.unpackParams(
       namedParams,
-      queryParams
+      queryParams,
     )
     const { maintainers } = await this.fetchPackageData({
       scope,

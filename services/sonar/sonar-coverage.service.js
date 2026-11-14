@@ -1,33 +1,44 @@
-'use strict'
+import { pathParam } from '../index.js'
+import { coveragePercentage } from '../color-formatters.js'
+import SonarBase from './sonar-base.js'
+import {
+  documentation,
+  queryParamSchema,
+  openApiQueryParams,
+} from './sonar-helpers.js'
 
-const { coveragePercentage } = require('../color-formatters')
-const SonarBase = require('./sonar-base')
-const { documentation, keywords, queryParamSchema } = require('./sonar-helpers')
-
-module.exports = class SonarCoverage extends SonarBase {
+export default class SonarCoverage extends SonarBase {
   static category = 'coverage'
 
   static route = {
     base: 'sonar/coverage',
-    pattern: ':component',
+    pattern: ':component/:branch*',
     queryParamSchema,
   }
 
-  static examples = [
-    {
-      title: 'Sonar Coverage',
-      namedParams: {
-        component: 'org.ow2.petals:petals-se-ase',
+  static openApi = {
+    '/sonar/coverage/{component}': {
+      get: {
+        summary: 'Sonar Coverage',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'component', example: 'gitify-app_gitify' }),
+          ...openApiQueryParams,
+        ],
       },
-      queryParams: {
-        server: 'http://sonar.petalslink.com',
-        sonarVersion: '4.2',
-      },
-      staticPreview: this.render({ coverage: 63 }),
-      keywords,
-      documentation,
     },
-  ]
+    '/sonar/coverage/{component}/{branch}': {
+      get: {
+        summary: 'Sonar Coverage (branch)',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'component', example: 'gitify-app_gitify' }),
+          pathParam({ name: 'branch', example: 'main' }),
+          ...openApiQueryParams,
+        ],
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'coverage' }
 
@@ -38,11 +49,12 @@ module.exports = class SonarCoverage extends SonarBase {
     }
   }
 
-  async handle({ component }, { server, sonarVersion }) {
+  async handle({ component, branch }, { server, sonarVersion }) {
     const json = await this.fetch({
       sonarVersion,
       server,
       component,
+      branch,
       metricName: 'coverage',
     })
     const { coverage } = this.transform({

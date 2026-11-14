@@ -1,34 +1,53 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { schema, periodMap, BaseJsDelivrService } from './jsdelivr-base.js'
 
-const { schema, periodMap, BaseJsDelivrService } = require('./jsdelivr-base')
-
-module.exports = class JsDelivrHitsNPM extends BaseJsDelivrService {
+export default class JsDelivrHitsNPM extends BaseJsDelivrService {
   static route = {
     base: 'jsdelivr/npm',
-    pattern: ':period(hd|hw|hm|hy)/:scope(@[^/]+)?/:packageName',
+    pattern: ':period/:scope(@[^/]+)?/:packageName',
   }
+  static routeEnum = ['hd', 'hw', 'hm', 'hy']
 
-  static examples = [
-    {
-      title: 'jsDelivr hits (npm)',
-      pattern: ':period(hd|hw|hm|hy)/:packageName',
-      namedParams: {
-        period: 'hm',
-        packageName: 'jquery',
+  static openApi = {
+    '/jsdelivr/npm/{period}/{packageName}': {
+      get: {
+        summary: 'jsDelivr hits (npm)',
+        parameters: pathParams(
+          {
+            name: 'period',
+            schema: { type: 'string', enum: this.getEnum('period') },
+            example: 'hm',
+            description: 'Hits per Day, Week, Month or Year',
+          },
+          {
+            name: 'packageName',
+            example: 'fire',
+          },
+        ),
       },
-      staticPreview: this.render({ period: 'hm', hits: 920101789 }),
     },
-    {
-      title: 'jsDelivr hits (npm scoped)',
-      pattern: ':period(hd|hw|hm|hy)/:scope?/:packageName',
-      namedParams: {
-        period: 'hm',
-        scope: '@angular',
-        packageName: 'fire',
+    '/jsdelivr/npm/{period}/{scope}/{packageName}': {
+      get: {
+        summary: 'jsDelivr hits (npm scoped)',
+        parameters: pathParams(
+          {
+            name: 'period',
+            schema: { type: 'string', enum: this.getEnum('period') },
+            example: 'hm',
+            description: 'Hits per Day, Week, Month or Year',
+          },
+          {
+            name: 'scope',
+            example: '@angular',
+          },
+          {
+            name: 'packageName',
+            example: 'fire',
+          },
+        ),
       },
-      staticPreview: this.render({ period: 'hm', hits: 94123 }),
     },
-  ]
+  }
 
   async fetch({ period, packageName }) {
     return this._requestJson({

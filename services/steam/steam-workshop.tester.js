@@ -1,10 +1,14 @@
-'use strict'
+import { ServiceTester } from '../tester.js'
+import {
+  isMetric,
+  isMetricFileSize,
+  isFormattedDate,
+} from '../test-validators.js'
 
-const { ServiceTester } = require('../tester')
-const { isMetric, isFileSize, isFormattedDate } = require('../test-validators')
-
-const t = new ServiceTester({ id: 'steam', title: 'Steam Workshop Tests' })
-module.exports = t
+export const t = new ServiceTester({
+  id: 'steam',
+  title: 'Steam Workshop Tests',
+})
 
 t.create('Collection Files')
   .get('/collection-files/180077636.json')
@@ -12,7 +16,7 @@ t.create('Collection Files')
 
 t.create('File Size')
   .get('/size/1523924535.json')
-  .expectBadge({ label: 'size', message: isFileSize })
+  .expectBadge({ label: 'size', message: isMetricFileSize })
 
 t.create('Release Date')
   .get('/release-date/1523924535.json')

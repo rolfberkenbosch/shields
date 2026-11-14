@@ -1,20 +1,18 @@
-'use strict'
-
-const Joi = require('joi')
-const { addv } = require('../text-formatters')
-const { BaseJsonService, NotFound } = require('..')
-const { latestVersion } = require('./luarocks-version-helpers')
+import Joi from 'joi'
+import { BaseJsonService, NotFound, pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { latestVersion } from './luarocks-version-helpers.js'
 
 const schema = Joi.object({
   repository: Joi.object()
     .pattern(
       Joi.string(),
-      Joi.object().pattern(Joi.string(), Joi.array().strip())
+      Joi.object().pattern(Joi.string(), Joi.array().strip()),
     )
     .required(),
 }).required()
 
-module.exports = class Luarocks extends BaseJsonService {
+export default class Luarocks extends BaseJsonService {
   static category = 'version'
 
   static route = {
@@ -22,47 +20,35 @@ module.exports = class Luarocks extends BaseJsonService {
     pattern: ':user/:moduleName/:version?',
   }
 
-  static examples = [
-    {
-      title: 'LuaRocks',
-      namedParams: {
-        user: 'mpeterv',
-        moduleName: 'luacheck',
+  static openApi = {
+    '/luarocks/v/{user}/{moduleName}': {
+      get: {
+        summary: 'LuaRocks',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'mpeterv',
+          },
+          {
+            name: 'moduleName',
+            example: 'luacheck',
+          },
+        ),
       },
-      staticPreview: this.render({ version: '0.23.0-1' }),
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'luarocks',
   }
 
-  static render({ version }) {
-    // The badge colors are following the heuristic rule where `scm < dev <
-    // stable` (e.g., `scm-1` < `dev-1` < `0.1.0-1`).
-    let color
-    switch (version.slice(0, 3).toLowerCase()) {
-      case 'dev':
-        color = 'yellow'
-        break
-      case 'scm':
-      case 'cvs':
-        color = 'orange'
-        break
-      default:
-        color = 'brightgreen'
-    }
-
-    return { message: addv(version), color }
-  }
-
   async fetch({ user, moduleName }) {
     const { repository } = await this._requestJson({
       url: `https://luarocks.org/manifests/${encodeURIComponent(
-        user
+        user,
       )}/manifest.json`,
       schema,
-      errorMessages: {
+      httpErrors: {
         404: 'user not found',
       },
     })
@@ -86,6 +72,6 @@ module.exports = class Luarocks extends BaseJsonService {
       const versions = Object.keys(moduleInfo)
       version = latestVersion(versions)
     }
-    return this.constructor.render({ version })
+    return renderVersionBadge({ version })
   }
 }

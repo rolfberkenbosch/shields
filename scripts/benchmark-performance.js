@@ -1,16 +1,15 @@
-'use strict'
-
-const config = require('config').util.toObject()
-const got = require('got')
-const minimist = require('minimist')
-const Server = require('../core/server/server')
+import { parseArgs } from 'util'
+import config from 'config'
+import got from 'got'
+import Server from '../core/server/server.js'
 
 async function main() {
-  const server = new Server(config)
+  const server = new Server(config.util.toObject())
   await server.start()
-  const args = minimist(process.argv)
-  const iterations = parseInt(args.iterations) || 10000
-  for (let i = 0; i < iterations; ++i) {
+  const { iterations = '10000' } = parseArgs({
+    options: { iterations: { type: 'string' } },
+  }).values
+  for (let i = 0; i < parseInt(iterations); ++i) {
     await got(`${server.baseUrl}badge/coverage-${i}-green.svg`)
   }
   await server.stop()

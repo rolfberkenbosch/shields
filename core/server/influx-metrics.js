@@ -1,11 +1,10 @@
-'use strict'
-const os = require('os')
-const got = require('got')
-const generateInstanceId = require('./instance-id-generator')
-const { promClientJsonToInfluxV2 } = require('./metrics/format-converters')
-const log = require('./log')
+import os from 'os'
+import got from 'got'
+import generateInstanceId from './instance-id-generator.js'
+import { promClientJsonToInfluxV2 } from './metrics/format-converters.js'
+import log from './log.js'
 
-module.exports = class InfluxMetrics {
+export default class InfluxMetrics {
   constructor(metricInstance, config) {
     this._metricInstance = metricInstance
     this._config = config
@@ -14,10 +13,9 @@ module.exports = class InfluxMetrics {
 
   async sendMetrics() {
     const request = {
-      url: this._config.url,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: await this.metrics(),
-      timeout: this._config.timeoutMillseconds,
+      timeout: { request: this._config.timeoutMillseconds },
       username: this._config.username,
       password: this._config.password,
       throwHttpErrors: false,
@@ -25,17 +23,19 @@ module.exports = class InfluxMetrics {
 
     let response
     try {
-      response = await got.post(request)
+      response = await got.post(this._config.url, request)
     } catch (error) {
       log.error(
-        new Error(`Cannot push metrics. Cause: ${error.name}: ${error.message}`)
+        new Error(
+          `Cannot push metrics. Cause: ${error.name}: ${error.message}`,
+        ),
       )
     }
     if (response && response.statusCode >= 300) {
       log.error(
         new Error(
-          `Cannot push metrics. ${request.url} responded with status code ${response.statusCode}`
-        )
+          `Cannot push metrics. ${this._config.url} responded with status code ${response.statusCode}`,
+        ),
       )
     }
   }
@@ -43,7 +43,7 @@ module.exports = class InfluxMetrics {
   startPushingMetrics() {
     this._intervalId = setInterval(
       () => this.sendMetrics(),
-      this._config.intervalSeconds * 1000
+      this._config.intervalSeconds * 1000,
     )
   }
 

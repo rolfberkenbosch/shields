@@ -1,16 +1,15 @@
-'use strict'
+import { redirector } from '../index.js'
 
-const { redirector } = require('..')
-
-module.exports = [
+export default [
   redirector({
     category: 'social',
     name: 'TwitterUrlRedirect',
     route: {
       base: 'twitter/url',
-      pattern: ':protocol(https|http)/:hostAndPath+',
+      pattern: ':protocol/:hostAndPath+',
     },
-    transformPath: () => `/twitter/url`,
+    routeEnum: ['https', 'http'],
+    transformPath: () => '/twitter/url',
     transformQueryParams: ({ protocol, hostAndPath }) => ({
       url: `${protocol}://${hostAndPath}`,
     }),

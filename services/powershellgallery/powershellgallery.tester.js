@@ -1,21 +1,18 @@
-'use strict'
-
-const Joi = require('joi')
-const { ServiceTester } = require('../tester')
-const {
+import Joi from 'joi'
+import { ServiceTester } from '../tester.js'
+import {
   isMetric,
   isVPlusDottedVersionNClauses,
   isVPlusDottedVersionNClausesWithOptionalSuffix,
-} = require('../test-validators')
+} from '../test-validators.js'
 const isPlatform = Joi.string().regex(
-  /^(windows|linux|macos)( \| (windows|linux|macos))*$/
+  /^(windows|linux|macos)( \| (windows|linux|macos))*$/,
 )
 
-const t = new ServiceTester({
+export const t = new ServiceTester({
   id: 'powershellgallery',
   title: 'PowerShell Gallery',
 })
-module.exports = t
 
 t.create('total downloads (valid)').get('/dt/ACMESharp.json').expectBadge({
   label: 'downloads',
@@ -47,10 +44,13 @@ t.create('version (pre) (not found)')
   .expectBadge({ label: 'powershell gallery', message: 'not found' })
 
 t.create('version (legacy redirect: vpre)')
-  .get('/vpre/ACMESharp.svg')
-  .expectRedirect('/powershellgallery/v/ACMESharp.svg?include_prereleases')
+  .get('/vpre/ACMESharp.json')
+  .expectBadge({
+    label: 'powershell gallery',
+    message: 'https://github.com/badges/shields/pull/11583',
+  })
 
-t.create('platform (valid').get('/p/DNS.1.1.1.1.json').expectBadge({
+t.create('platform (valid)').get('/p/PackageManagement.json').expectBadge({
   label: 'platform',
   message: isPlatform,
 })

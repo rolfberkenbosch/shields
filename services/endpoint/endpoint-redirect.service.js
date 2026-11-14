@@ -1,13 +1,12 @@
-'use strict'
+import { retiredService } from '../index.js'
 
-const { redirector } = require('..')
-
-module.exports = redirector({
+export default retiredService({
   category: 'other',
+  label: 'endpoint',
   route: {
     base: 'badge/endpoint',
     pattern: '',
   },
-  transformPath: () => '/endpoint',
-  dateAdded: new Date('2019-02-19'),
+  dateAdded: new Date('2025-12-20'),
+  issueUrl: 'https://github.com/badges/shields/pull/11583',
 })

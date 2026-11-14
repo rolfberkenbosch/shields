@@ -1,9 +1,6 @@
-'use strict'
-
-const {
-  isVPlusDottedVersionNClausesWithOptionalSuffixAndEpoch,
-} = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isVPlusDottedVersionNClausesWithOptionalSuffixAndEpoch } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('Fedora package (default branch, valid)')
   .get('/rpm.json')
@@ -12,10 +9,10 @@ t.create('Fedora package (default branch, valid)')
     message: isVPlusDottedVersionNClausesWithOptionalSuffixAndEpoch,
   })
 
-t.create('Fedora package (not found)')
+t.create('Fedora package (package not found)')
   .get('/not-a-package/rawhide.json')
-  .expectBadge({ label: 'fedora', message: 'not found' })
+  .expectBadge({ label: 'fedora', message: 'branch or package not found' })
 
 t.create('Fedora package (branch not found)')
   .get('/not-a-package/not-a-branch.json')
-  .expectBadge({ label: 'fedora', message: 'branch not found' })
+  .expectBadge({ label: 'fedora', message: 'branch or package not found' })

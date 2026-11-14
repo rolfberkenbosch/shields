@@ -1,7 +1,5 @@
-'use strict'
-
-const { test, forCases, given } = require('sazerac')
-const OreSpongeVersions = require('./ore-sponge-versions.service')
+import { test, forCases, given } from 'sazerac'
+import OreSpongeVersions from './ore-sponge-versions.service.js'
 
 const PROMOTED_VERSIONS = [
   {
@@ -34,7 +32,7 @@ describe('OreSpongeVersions', function () {
             ],
           },
         }),
-      ]
+      ],
     ).expect({ versions: ['1.23', '4.56'] })
   })
 

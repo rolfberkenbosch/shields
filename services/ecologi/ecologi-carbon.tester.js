@@ -1,13 +1,12 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
-const { withRegex } = require('../test-validators')
+import { createServiceTester } from '../tester.js'
+import { isMetricWithPattern } from '../test-validators.js'
+export const t = await createServiceTester()
 
 t.create('request for existing username')
   .get('/ecologi.json')
   .expectBadge({
     label: 'carbon offset',
-    message: withRegex(/[\d.]+ tonnes/),
+    message: isMetricWithPattern(/ tonnes/),
   })
 
 t.create('invalid username').get('/non-existent-username.json').expectBadge({

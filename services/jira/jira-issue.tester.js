@@ -1,6 +1,5 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('unknown issue')
   .get('/notArealIssue-000.json?baseUrl=https://issues.apache.org/jira')
@@ -11,9 +10,9 @@ t.create('known issue')
   .expectBadge({ label: 'kafka-2896', message: 'Resolved' })
 
 t.create('no status color')
-  .get('/foo-123.json?baseUrl=http://issues.apache.org/jira')
+  .get('/foo-123.json?baseUrl=https://issues.apache.org/jira')
   .intercept(nock =>
-    nock('http://issues.apache.org/jira/rest/api/2/issue')
+    nock('https://issues.apache.org/jira/rest/api/2/issue')
       .get(`/${encodeURIComponent('foo-123')}`)
       .reply(200, {
         fields: {
@@ -21,7 +20,7 @@ t.create('no status color')
             name: 'pending',
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'foo-123',
@@ -43,7 +42,7 @@ t.create('green status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'bar-345',
@@ -65,7 +64,7 @@ t.create('medium-gray status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'abc-123',
@@ -87,7 +86,7 @@ t.create('yellow status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'test-001',
@@ -109,7 +108,7 @@ t.create('brown status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'zzz-789',
@@ -131,7 +130,7 @@ t.create('warm-red status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'fire-321',
@@ -153,7 +152,7 @@ t.create('blue-gray status color')
             },
           },
         },
-      })
+      }),
   )
   .expectBadge({
     label: 'sky-775',

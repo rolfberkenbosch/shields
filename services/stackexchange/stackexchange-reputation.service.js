@@ -1,9 +1,8 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { floorCount: floorCountColor } = require('../color-formatters')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { metric } from '../text-formatters.js'
+import { floorCount as floorCountColor } from '../color-formatters.js'
+import { StackExchangeBase } from './stackexchange-base.js'
 
 const reputationSchema = Joi.object({
   items: Joi.array()
@@ -11,33 +10,33 @@ const reputationSchema = Joi.object({
     .items(
       Joi.object({
         reputation: Joi.number().min(0).required(),
-      })
+      }),
     )
     .required(),
 }).required()
 
-module.exports = class StackExchangeReputation extends BaseJsonService {
-  static category = 'chat'
-
+export default class StackExchangeReputation extends StackExchangeBase {
   static route = {
     base: 'stackexchange',
     pattern: ':stackexchangesite/r/:query',
   }
 
-  static examples = [
-    {
-      title: 'Stack Exchange reputation',
-      namedParams: { stackexchangesite: 'stackoverflow', query: '123' },
-      staticPreview: this.render({
-        stackexchangesite: 'stackoverflow',
-        numValue: 10,
-      }),
-      keywords: ['stackexchange', 'stackoverflow'],
+  static openApi = {
+    '/stackexchange/{stackexchangesite}/r/{query}': {
+      get: {
+        summary: 'Stack Exchange reputation',
+        parameters: pathParams(
+          {
+            name: 'stackexchangesite',
+            example: 'stackoverflow',
+          },
+          {
+            name: 'query',
+            example: '123',
+          },
+        ),
+      },
     },
-  ]
-
-  static defaultBadgeData = {
-    label: 'stackoverflow',
   }
 
   static render({ stackexchangesite, numValue }) {
@@ -53,11 +52,11 @@ module.exports = class StackExchangeReputation extends BaseJsonService {
   async handle({ stackexchangesite, query }) {
     const path = `users/${query}`
 
-    const parsedData = await this._requestJson({
+    const parsedData = await this.fetch({
       schema: reputationSchema,
-      options: { gzip: true, qs: { site: stackexchangesite } },
+      options: { decompress: true, searchParams: { site: stackexchangesite } },
       url: `https://api.stackexchange.com/2.2/${path}`,
-      errorMessages: {
+      httpErrors: {
         400: 'invalid parameters',
       },
     })

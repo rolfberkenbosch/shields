@@ -1,9 +1,7 @@
-'use strict'
+import { renderVersionBadge } from '../version.js'
+import { BaseService, NotFound, InvalidResponse, pathParams } from '../index.js'
 
-const { renderVersionBadge } = require('../version')
-const { BaseService, NotFound, InvalidResponse } = require('..')
-
-module.exports = class OpmVersion extends BaseService {
+export default class OpmVersion extends BaseService {
   static category = 'version'
 
   static route = {
@@ -11,16 +9,23 @@ module.exports = class OpmVersion extends BaseService {
     pattern: ':user/:moduleName',
   }
 
-  static examples = [
-    {
-      title: 'OPM',
-      namedParams: {
-        user: 'openresty',
-        moduleName: 'lua-resty-lrucache',
+  static openApi = {
+    '/opm/v/{user}/{moduleName}': {
+      get: {
+        summary: 'OPM Version',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'openresty',
+          },
+          {
+            name: 'moduleName',
+            example: 'lua-resty-lrucache',
+          },
+        ),
       },
-      staticPreview: renderVersionBadge({ version: 'v0.08' }),
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'opm',
@@ -28,21 +33,21 @@ module.exports = class OpmVersion extends BaseService {
 
   async fetch({ user, moduleName }) {
     const { res } = await this._request({
-      url: `https://opm.openresty.org/api/pkg/fetch`,
+      url: 'https://opm.openresty.org/api/pkg/fetch',
       options: {
         method: 'HEAD',
-        qs: {
+        searchParams: {
           account: user,
           name: moduleName,
         },
       },
-      errorMessages: {
+      httpErrors: {
         404: 'module not found',
       },
     })
 
-    // XXX: intercept 302 redirects and set followRedirect to false
-    const location = res.request.path
+    // TODO: set followRedirect to false and intercept 302 redirects
+    const location = res.redirectUrls[0].toString()
     if (!location) {
       throw new NotFound({ prettyMessage: 'module not found' })
     }

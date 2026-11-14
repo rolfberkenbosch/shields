@@ -1,8 +1,5 @@
-'use strict'
-
-const escapeStringRegexp = require('escape-string-regexp')
-const Joi = require('joi')
-const { pathToRegexp } = require('path-to-regexp')
+import Joi from 'joi'
+import { pathToRegexp } from 'path-to-regexp'
 
 function makeFullUrl(base, partialUrl) {
   return `/${[base, partialUrl].filter(Boolean).join('/')}`
@@ -28,7 +25,7 @@ function assertValidRoute(route, message = undefined) {
 function prepareRoute({ base, pattern, format, capture, withPng }) {
   const extensionRegex = ['', '.svg', '.json']
     .concat(withPng ? ['.png'] : [])
-    .map(escapeStringRegexp)
+    .map(RegExp.escape)
     .join('|')
   let regex, captureNames
   if (pattern === undefined) {
@@ -54,7 +51,7 @@ function namedParamsForMatch(captureNames = [], match, ServiceClass) {
   if (captureNames.length !== captures.length) {
     throw new Error(
       `Service ${ServiceClass.name} declares incorrect number of named params ` +
-        `(expected ${captures.length}, got ${captureNames.length})`
+        `(expected ${captures.length}, got ${captureNames.length})`,
     )
   }
 
@@ -74,7 +71,7 @@ function getQueryParamNames({ queryParamSchema }) {
   }
 }
 
-module.exports = {
+export {
   makeFullUrl,
   isValidRoute,
   assertValidRoute,

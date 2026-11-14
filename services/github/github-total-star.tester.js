@@ -1,7 +1,6 @@
-'use strict'
-
-const { isMetric } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isMetric } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('Stars (User)')
   .get('/hemantsonu20.json')
@@ -52,6 +51,7 @@ t.create('Stars (Org)')
   })
 
 t.create('Stars (Org) Lots of repo')
+  .timeout(15000)
   .get('/github.json')
   .expectBadge({
     label: 'stars',

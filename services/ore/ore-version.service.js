@@ -1,9 +1,8 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { BaseOreService, description } from './ore-base.js'
 
-const { renderVersionBadge } = require('../version')
-const { BaseOreService, documentation, keywords } = require('./ore-base')
-
-module.exports = class OreVersion extends BaseOreService {
+export default class OreVersion extends BaseOreService {
   static category = 'version'
 
   static route = {
@@ -11,17 +10,18 @@ module.exports = class OreVersion extends BaseOreService {
     pattern: ':pluginId',
   }
 
-  static examples = [
-    {
-      title: 'Ore Version',
-      namedParams: {
-        pluginId: 'nucleus',
+  static openApi = {
+    '/ore/v/{pluginId}': {
+      get: {
+        summary: 'Ore Version',
+        description,
+        parameters: pathParams({
+          name: 'pluginId',
+          example: 'nucleus',
+        }),
       },
-      staticPreview: renderVersionBadge({ version: '2.2.3' }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'version',
@@ -35,12 +35,10 @@ module.exports = class OreVersion extends BaseOreService {
   }
 
   transform({ data }) {
-    const { promoted_versions } = data
+    const { promoted_versions: promotedVersions } = data
     return {
       version:
-        promoted_versions.length === 0
-          ? undefined
-          : promoted_versions[0].version,
+        promotedVersions.length === 0 ? undefined : promotedVersions[0].version,
     }
   }
 

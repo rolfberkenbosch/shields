@@ -1,27 +1,29 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '../version.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.object({ version: Joi.string().required() }).required()
 
-module.exports = class Cookbook extends BaseJsonService {
+export default class Cookbook extends BaseJsonService {
   static category = 'version'
   static route = { base: 'cookbook/v', pattern: ':cookbook' }
 
-  static examples = [
-    {
-      title: 'Chef cookbook',
-      namedParams: { cookbook: 'chef-sugar' },
-      staticPreview: renderVersionBadge({ version: '5.0.0' }),
+  static openApi = {
+    '/cookbook/v/{cookbook}': {
+      get: {
+        summary: 'Chef cookbook',
+        parameters: pathParams({
+          name: 'cookbook',
+          example: 'chef-sugar',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'cookbook' }
 
   async fetch({ cookbook }) {
-    const url = `https://supermarket.getchef.com/api/v1/cookbooks/${cookbook}/versions/latest`
+    const url = `https://supermarket.chef.io/api/v1/cookbooks/${cookbook}/versions/latest`
     return this._requestJson({ schema, url })
   }
 

@@ -1,13 +1,11 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('..//version')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '..//version.js'
+import { BaseJsonService, pathParams } from '../index.js'
 const schema = Joi.object({
   latest_version: Joi.string().required(),
 }).required()
 
-module.exports = class SpackVersion extends BaseJsonService {
+export default class SpackVersion extends BaseJsonService {
   static category = 'version'
 
   static route = {
@@ -15,14 +13,17 @@ module.exports = class SpackVersion extends BaseJsonService {
     pattern: ':packageName',
   }
 
-  static examples = [
-    {
-      title: 'Spack',
-      namedParams: { packageName: 'adios2' },
-      staticPreview: this.render({ version: '2.3.1' }),
-      keywords: ['hpc'],
+  static openApi = {
+    '/spack/v/{packageName}': {
+      get: {
+        summary: 'Spack',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'adios2',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'spack' }
 
@@ -31,11 +32,10 @@ module.exports = class SpackVersion extends BaseJsonService {
   }
 
   async fetch({ packageName }) {
-    const firstLetter = packageName[0]
     return this._requestJson({
       schema,
-      url: `https://packages.spack.io/api/${firstLetter}/${packageName}.json`,
-      errorMessages: {
+      url: `https://packages.spack.io/data/packages/${packageName}.json`,
+      httpErrors: {
         404: 'package not found',
       },
     })

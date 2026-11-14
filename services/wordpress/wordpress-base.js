@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const { BaseJsonService, NotFound } = require('..')
+import Joi from 'joi'
+import qs from 'qs'
+import { nonNegativeInteger } from '../validators.js'
+import { BaseJsonService, NotFound } from '../index.js'
 
 const stringOrFalse = Joi.alternatives(Joi.string(), Joi.bool())
 
@@ -42,7 +41,7 @@ const notFoundSchema = Joi.object()
 const pluginSchemas = Joi.alternatives(pluginSchema, notFoundSchema)
 const themeSchemas = Joi.alternatives(themeSchema, notFoundSchema)
 
-module.exports = class BaseWordpress extends BaseJsonService {
+export class BaseWordpress extends BaseJsonService {
   async fetch({ extensionType, slug }) {
     const url = `https://api.wordpress.org/${extensionType}s/info/1.2/`
     let schemas
@@ -51,29 +50,32 @@ module.exports = class BaseWordpress extends BaseJsonService {
     } else if (extensionType === 'theme') {
       schemas = themeSchemas
     }
+
+    const queryString = qs.stringify(
+      {
+        action: `${extensionType}_information`,
+        request: {
+          slug,
+          fields: {
+            active_installs: 1,
+            sections: 0,
+            homepage: 0,
+            tags: 0,
+            screenshot_url: 0,
+            downloaded: 1,
+            last_updated: 1,
+            requires_php: 1,
+          },
+        },
+      },
+      { encode: false },
+    )
+
     const json = await this._requestJson({
       url,
       schema: schemas,
       options: {
-        qs: {
-          action: `${extensionType}_information`,
-          request: {
-            slug,
-            fields: {
-              active_installs: 1,
-              sections: 0,
-              homepage: 0,
-              tags: 0,
-              screenshot_url: 0,
-              downloaded: 1,
-              last_updated: 1,
-              requires_php: 1,
-            },
-          },
-        },
-        qsStringifyOptions: {
-          encode: false,
-        },
+        searchParams: queryString,
       },
     })
     if ('error' in json) {
@@ -82,3 +84,10 @@ module.exports = class BaseWordpress extends BaseJsonService {
     return json
   }
 }
+
+export const description = `
+These badges rely on an API that is no longer supported by Wordpress. You are
+still free to use them, simply bear in mind that Shields.io cannot guarantee
+that they'll keep on working in the future. Please also double-check the
+provided slug, as an incorrect value may lead to unexpected results.
+`

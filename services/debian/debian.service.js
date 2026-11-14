@@ -1,8 +1,11 @@
-'use strict'
-
-const Joi = require('joi')
-const { latest, renderVersionBadge } = require('../version')
-const { BaseJsonService, NotFound, InvalidResponse } = require('..')
+import Joi from 'joi'
+import { latest, renderVersionBadge } from '../version.js'
+import {
+  BaseJsonService,
+  NotFound,
+  InvalidResponse,
+  pathParams,
+} from '../index.js'
 
 const schema = Joi.array()
   .items(
@@ -10,28 +13,47 @@ const schema = Joi.array()
       /./,
       Joi.object()
         .pattern(/./, Joi.object().pattern(/./, Joi.object()))
-        .required()
-    ) // Optional, missing means not found
+        .required(),
+    ), // Optional, missing means not found
   )
   .max(1)
   .required()
 
 const defaultDistribution = 'stable'
 
-module.exports = class Debian extends BaseJsonService {
+export default class Debian extends BaseJsonService {
   static category = 'version'
   static route = {
     base: 'debian/v',
     pattern: ':packageName/:distribution?',
   }
 
-  static examples = [
-    {
-      title: 'Debian package',
-      namedParams: { packageName: 'apt', distribution: 'unstable' },
-      staticPreview: renderVersionBadge({ version: '1.8.0' }),
+  static openApi = {
+    '/debian/v/{packageName}/{distribution}': {
+      get: {
+        summary: 'Debian package (for distribution)',
+        parameters: pathParams(
+          {
+            name: 'packageName',
+            example: 'apt',
+          },
+          {
+            name: 'distribution',
+            example: 'unstable',
+          },
+        ),
+      },
     },
-  ]
+    '/debian/v/{packageName}': {
+      get: {
+        summary: 'Debian package',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'apt',
+        }),
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'debian' }
 
@@ -40,7 +62,7 @@ module.exports = class Debian extends BaseJsonService {
       schema,
       url: 'https://api.ftp-master.debian.org/madison',
       options: {
-        qs: {
+        searchParams: {
           f: 'json',
           s: distribution,
           package: packageName,

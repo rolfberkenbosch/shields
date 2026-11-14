@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const KeybaseProfile = require('./keybase-profile')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { nonNegativeInteger } from '../validators.js'
+import KeybaseProfile from './keybase-profile.js'
 
 const zcachAddressSchema = Joi.object({
   status: Joi.object({
@@ -15,44 +14,47 @@ const zcachAddressSchema = Joi.object({
           zcash: Joi.array().items(
             Joi.object({
               address: Joi.string().required(),
-            }).required()
+            }).required(),
           ),
         })
           .required()
           .allow(null),
       })
         .required()
-        .allow(null)
+        .allow(null),
     )
     .min(0)
     .max(1),
 }).required()
 
-module.exports = class KeybaseZEC extends KeybaseProfile {
+export default class KeybaseZEC extends KeybaseProfile {
   static route = {
     base: 'keybase/zec',
     pattern: ':username',
   }
 
-  static examples = [
-    {
-      title: 'Keybase ZEC',
-      namedParams: { username: 'skyplabs' },
-      staticPreview: this.render({
-        address: 't1RJDxpBcsgqAotqhepkhLFMv2XpMfvnf1y',
-      }),
-      keywords: ['zcash'],
+  static openApi = {
+    '/keybase/zec/{username}': {
+      get: {
+        summary: 'Keybase ZEC',
+        parameters: pathParams({
+          name: 'username',
+          example: 'skyplabs',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'zec',
     color: 'informational',
+    namedLogo: 'keybase',
   }
 
   static render({ address }) {
     return {
       message: address,
+      style: 'social',
     }
   }
 
@@ -60,7 +62,7 @@ module.exports = class KeybaseZEC extends KeybaseProfile {
 
   async handle({ username }) {
     const options = {
-      form: {
+      searchParams: {
         usernames: username,
         fields: 'cryptocurrency_addresses',
       },

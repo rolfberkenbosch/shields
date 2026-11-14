@@ -1,37 +1,41 @@
-'use strict'
-
-const Joi = require('joi')
-const { nonNegativeInteger } = require('../validators')
-const { metric } = require('../text-formatters')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { anyInteger } from '../validators.js'
+import { metric } from '../text-formatters.js'
+import { pathParams } from '../index.js'
+import RedditBase from './reddit-base.js'
 
 const schema = Joi.object({
   data: Joi.object({
-    link_karma: nonNegativeInteger,
-    comment_karma: nonNegativeInteger,
+    link_karma: anyInteger,
+    comment_karma: anyInteger,
   }).required(),
 }).required()
 
-module.exports = class RedditUserKarma extends BaseJsonService {
-  static category = 'social'
-
+export default class RedditUserKarma extends RedditBase {
   static route = {
     base: 'reddit/user-karma',
-    pattern: ':variant(link|comment|combined)/:user',
+    pattern: ':variant/:user',
   }
+  static routeEnum = ['link', 'comment', 'combined']
 
-  static examples = [
-    {
-      title: 'Reddit User Karma',
-      namedParams: { variant: 'combined', user: 'example' },
-      staticPreview: {
-        label: 'combined karma',
-        message: 56,
-        color: 'red',
-        style: 'social',
+  static openApi = {
+    '/reddit/user-karma/{variant}/{user}': {
+      get: {
+        summary: 'Reddit User Karma',
+        parameters: pathParams(
+          {
+            name: 'variant',
+            example: 'combined',
+            schema: { type: 'string', enum: this.getEnum('variant') },
+          },
+          {
+            name: 'user',
+            example: 'example',
+          },
+        ),
       },
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'reddit karma',
@@ -46,7 +50,8 @@ module.exports = class RedditUserKarma extends BaseJsonService {
     return {
       label,
       message: metric(karma),
-      color: 'red',
+      style: 'social',
+      color: karma > 0 ? 'brightgreen' : karma === 0 ? 'orange' : 'red',
       link: [`https://www.reddit.com/u/${user}`],
     }
   }
@@ -54,8 +59,11 @@ module.exports = class RedditUserKarma extends BaseJsonService {
   async fetch({ user }) {
     return this._requestJson({
       schema,
-      url: `https://www.reddit.com/u/${user}/about.json`,
-      errorMessages: {
+      // API requests with a bearer token should be made to https://oauth.reddit.com, NOT www.reddit.com.
+      url: this.authHelper.isConfigured
+        ? `https://oauth.reddit.com/u/${user}/about.json`
+        : `https://www.reddit.com/u/${user}/about.json`,
+      httpErrors: {
         404: 'user not found',
       },
     })

@@ -1,60 +1,65 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderDownloadsBadge } from '../downloads.js'
+import { OpenVSXBase, description } from './open-vsx-base.js'
 
-const { metric } = require('../text-formatters')
-const { downloadCount } = require('../color-formatters')
-const OpenVSXBase = require('./open-vsx-base')
-
-module.exports = class OpenVSXDownloads extends OpenVSXBase {
+export default class OpenVSXDownloads extends OpenVSXBase {
   static category = 'downloads'
 
   static route = {
-    base: 'open-vsx',
-    pattern: ':interval(dt)/:namespace/:extension/:version*',
+    base: 'open-vsx/dt',
+    pattern: ':namespace/:extension/:version*',
   }
 
-  static examples = [
-    {
-      title: 'Open VSX Downloads',
-      pattern: 'dt/:namespace/:extension',
-      namedParams: {
-        namespace: 'redhat',
-        extension: 'java',
+  static openApi = {
+    '/open-vsx/dt/{namespace}/{extension}': {
+      get: {
+        summary: 'Open VSX Downloads',
+        description,
+        parameters: pathParams(
+          {
+            name: 'namespace',
+            example: 'redhat',
+          },
+          {
+            name: 'extension',
+            example: 'java',
+          },
+        ),
       },
-      staticPreview: this.render({ downloads: 29000 }),
-      keywords: this.keywords,
     },
-    {
-      title: 'Open VSX Downloads (version)',
-      pattern: 'dt/:namespace/:extension/:version',
-      namedParams: {
-        namespace: 'redhat',
-        extension: 'java',
-        version: '0.69.0',
+    '/open-vsx/dt/{namespace}/{extension}/{version}': {
+      get: {
+        summary: 'Open VSX Downloads (version)',
+        description,
+        parameters: pathParams(
+          {
+            name: 'namespace',
+            example: 'redhat',
+          },
+          {
+            name: 'extension',
+            example: 'java',
+          },
+          {
+            name: 'version',
+            example: '0.69.0',
+          },
+        ),
       },
-      staticPreview: this.render({ version: '0.69.0', downloads: 29000 }),
-      keywords: this.keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'downloads' }
 
-  static render({ version, downloads }) {
-    return {
-      label: version ? `downloads@${version}` : 'downloads',
-      message: metric(downloads),
-      color: downloadCount(downloads),
-    }
-  }
-
   async handle({ namespace, extension, version }) {
-    const { version: tag, downloadCount } = await this.fetch({
+    const { version: tag, downloadCount: downloads } = await this.fetch({
       namespace,
       extension,
       version,
     })
-    return this.constructor.render({
+    return renderDownloadsBadge({
+      downloads,
       version: version ? tag : undefined,
-      downloads: downloadCount,
     })
   }
 }

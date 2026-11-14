@@ -1,19 +1,14 @@
-'use strict'
-
-const { test, given } = require('sazerac')
-const chai = require('chai')
-const { expect } = require('chai')
-const sinon = require('sinon')
-const httpMocks = require('node-mocks-http')
-const {
+import { test, given } from 'sazerac'
+import { expect } from 'chai'
+import sinon from 'sinon'
+import httpMocks from 'node-mocks-http'
+import {
   coalesceCacheLength,
   setHeadersForCacheLength,
   setCacheHeaders,
   setCacheHeadersForStaticResource,
   serverHasBeenUpSinceResourceCached,
-} = require('./cache-headers')
-
-chai.use(require('chai-datetime'))
+} from './cache-headers.js'
 
 describe('Cache header functions', function () {
   let res
@@ -77,12 +72,12 @@ describe('Cache header functions', function () {
         serviceDefaultCacheLengthSeconds: 900,
         serviceOverrideCacheLengthSeconds: 400,
         queryParams: {},
-      }).expect(900)
+      }).expect(400)
       given({
         cacheHeaderConfig,
         serviceOverrideCacheLengthSeconds: 400,
         queryParams: {},
-      }).expect(777)
+      }).expect(400)
       given({
         cacheHeaderConfig,
         serviceOverrideCacheLengthSeconds: 900,
@@ -102,14 +97,11 @@ describe('Cache header functions', function () {
   })
 
   describe('setHeadersForCacheLength', function () {
-    let sandbox
     beforeEach(function () {
-      sandbox = sinon.createSandbox()
-      sandbox.useFakeTimers()
+      sinon.useFakeTimers()
     })
     afterEach(function () {
-      sandbox.restore()
-      sandbox = undefined
+      sinon.restore()
     })
 
     it('should set the correct Date header', function () {
@@ -131,7 +123,7 @@ describe('Cache header functions', function () {
 
       it('should set the expected Cache-Control header', function () {
         expect(res._headers['cache-control']).to.equal(
-          'no-cache, no-store, must-revalidate'
+          'no-cache, no-store, must-revalidate',
         )
       })
 
@@ -147,7 +139,7 @@ describe('Cache header functions', function () {
 
       it('should set the expected Cache-Control header', function () {
         expect(res._headers['cache-control']).to.equal(
-          'max-age=123, s-maxage=123'
+          'max-age=123, s-maxage=123',
         )
       })
 
@@ -162,7 +154,7 @@ describe('Cache header functions', function () {
     it('sets the expected fields', function () {
       const expectedFields = ['date', 'cache-control', 'expires']
       expectedFields.forEach(field =>
-        expect(res._headers[field]).to.equal(undefined)
+        expect(res._headers[field]).to.equal(undefined),
       )
 
       setCacheHeaders({
@@ -175,7 +167,7 @@ describe('Cache header functions', function () {
       expectedFields.forEach(field =>
         expect(res._headers[field])
           .to.be.a('string')
-          .and.have.lengthOf.at.least(1)
+          .and.have.lengthOf.at.least(1),
       )
     })
   })
@@ -187,17 +179,15 @@ describe('Cache header functions', function () {
 
     it('should set the expected Cache-Control header', function () {
       expect(res._headers['cache-control']).to.equal(
-        `max-age=${24 * 3600}, s-maxage=${24 * 3600}`
+        `max-age=${24 * 3600}, s-maxage=${24 * 3600}`,
       )
     })
 
     it('should set the expected Last-Modified header', function () {
-      const lastModified = res._headers['last-modified']
-      expect(new Date(lastModified)).to.be.withinTime(
-        // Within the last 60 seconds.
-        new Date(Date.now() - 60 * 1000),
-        new Date()
-      )
+      const lastModifiedTime = Date.parse(res._headers['last-modified'])
+      const now = Date.now()
+      // Within the last 60 seconds.
+      expect(lastModifiedTime).to.be.within(now - 60 * 1000, now)
     })
   })
 
@@ -227,7 +217,7 @@ describe('Cache header functions', function () {
           })
           expect(serverHasBeenUpSinceResourceCached(req)).to.equal(false)
         })
-      }
+      },
     )
     context(
       'when the If-Modified-Since header is after the process started',
@@ -239,7 +229,7 @@ describe('Cache header functions', function () {
           })
           expect(serverHasBeenUpSinceResourceCached(req)).to.equal(true)
         })
-      }
+      },
     )
   })
 })

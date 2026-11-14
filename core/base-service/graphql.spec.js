@@ -1,35 +1,37 @@
-'use strict'
+import { expect } from 'chai'
+import gql from 'graphql-tag'
+import { print } from 'graphql/language/printer.js'
+import { mergeQueries } from './graphql.js'
 
-const { expect } = require('chai')
-const gql = require('graphql-tag')
-const { print } = require('graphql/language/printer')
-const { mergeQueries } = require('./graphql')
-
-require('../register-chai-plugins.spec')
+import '../register-chai-plugins.spec.js'
 
 describe('mergeQueries function', function () {
   it('merges valid gql queries', function () {
     expect(
       print(
-        mergeQueries(
-          gql`
-            query($param: String!) {
-              foo(param: $param) {
-                bar
-              }
+        mergeQueries(gql`
+          query ($param: String!) {
+            foo(param: $param) {
+              bar
             }
-          `
-        )
-      )
-    ).to.equalIgnoreSpaces(
-      'query ($param: String!) { foo(param: $param) { bar } }'
+          }
+        `),
+      ),
+    ).to.equal(
+      print(gql`
+        query ($param: String!) {
+          foo(param: $param) {
+            bar
+          }
+        }
+      `),
     )
 
     expect(
       print(
         mergeQueries(
           gql`
-            query($param: String!) {
+            query ($param: String!) {
               foo(param: $param) {
                 bar
               }
@@ -39,11 +41,18 @@ describe('mergeQueries function', function () {
             query {
               baz
             }
-          `
-        )
-      )
-    ).to.equalIgnoreSpaces(
-      'query ($param: String!) { foo(param: $param) { bar } baz }'
+          `,
+        ),
+      ),
+    ).to.equal(
+      print(gql`
+        query ($param: String!) {
+          foo(param: $param) {
+            bar
+          }
+          baz
+        }
+      `),
     )
 
     expect(
@@ -63,10 +72,18 @@ describe('mergeQueries function', function () {
             query {
               baz
             }
-          `
-        )
-      )
-    ).to.equalIgnoreSpaces('{ foo bar baz }')
+          `,
+        ),
+      ),
+    ).to.equal(
+      print(gql`
+        {
+          foo
+          bar
+          baz
+        }
+      `),
+    )
 
     expect(
       print(
@@ -80,10 +97,17 @@ describe('mergeQueries function', function () {
             {
               bar
             }
-          `
-        )
-      )
-    ).to.equalIgnoreSpaces('{ foo bar }')
+          `,
+        ),
+      ),
+    ).to.equal(
+      print(gql`
+        {
+          foo
+          bar
+        }
+      `),
+    )
   })
 
   it('throws an error when passed invalid params', function () {

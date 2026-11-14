@@ -1,15 +1,14 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const {
+import Joi from 'joi'
+import { pathParam, queryParam } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import {
   individualValueSchema,
   transformAndValidate,
   renderDynamicBadge,
-} = require('../dynamic-common')
-const { ConditionalGithubAuthV3Service } = require('./github-auth-service')
-const { fetchJsonFromRepo } = require('./github-common-fetch')
-const { documentation } = require('./github-helpers')
+} from '../dynamic-common.js'
+import { ConditionalGithubAuthV3Service } from './github-auth-service.js'
+import { fetchJsonFromRepo } from './github-common-fetch.js'
+import { documentation } from './github-helpers.js'
 
 const schema = Joi.object({
   version: individualValueSchema,
@@ -29,56 +28,31 @@ class GithubManifestVersion extends ConditionalGithubAuthV3Service {
     queryParamSchema,
   }
 
-  static examples = [
-    {
-      title: 'GitHub manifest version',
-      pattern: ':user/:repo',
-      namedParams: {
-        user: 'sindresorhus',
-        repo: 'show-all-github-issues',
+  static openApi = {
+    '/github/manifest-json/v/{user}/{repo}': {
+      get: {
+        summary: 'GitHub manifest version',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'user', example: 'sindresorhus' }),
+          pathParam({ name: 'repo', example: 'show-all-github-issues' }),
+          queryParam({ name: 'filename', example: 'extension/manifest.json' }),
+        ],
       },
-      staticPreview: this.render({ version: '1.0.3' }),
-      documentation,
     },
-    {
-      title: 'GitHub manifest version',
-      pattern: ':user/:repo/:branch',
-      namedParams: {
-        user: 'sindresorhus',
-        repo: 'show-all-github-issues',
-        branch: 'master',
+    '/github/manifest-json/v/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'GitHub manifest version (branch)',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'user', example: 'sindresorhus' }),
+          pathParam({ name: 'repo', example: 'show-all-github-issues' }),
+          pathParam({ name: 'branch', example: 'master' }),
+          queryParam({ name: 'filename', example: 'extension/manifest.json' }),
+        ],
       },
-      staticPreview: this.render({ version: '1.0.3', branch: 'master' }),
-      documentation,
     },
-    {
-      title: 'GitHub manifest version (path)',
-      pattern: ':user/:repo',
-      namedParams: {
-        user: 'RedSparr0w',
-        repo: 'IndieGala-Helper',
-      },
-      queryParams: {
-        filename: 'extension/manifest.json',
-      },
-      staticPreview: this.render({ version: 2 }),
-      documentation,
-    },
-    {
-      title: 'GitHub manifest version (path)',
-      pattern: ':user/:repo/:branch',
-      namedParams: {
-        user: 'RedSparr0w',
-        repo: 'IndieGala-Helper',
-        branch: 'master',
-      },
-      queryParams: {
-        filename: 'extension/manifest.json',
-      },
-      staticPreview: this.render({ version: 2, branch: 'master' }),
-      documentation,
-    },
-  ]
+  }
 
   static render({ version, branch }) {
     return renderVersionBadge({
@@ -108,74 +82,33 @@ class DynamicGithubManifest extends ConditionalGithubAuthV3Service {
     queryParamSchema,
   }
 
-  static examples = [
-    {
-      title: 'GitHub manifest.json dynamic',
-      pattern: ':key/:user/:repo',
-      namedParams: {
-        key: 'permissions',
-        user: 'sindresorhus',
-        repo: 'show-all-github-issues',
+  static openApi = {
+    '/github/manifest-json/{key}/{user}/{repo}': {
+      get: {
+        summary: 'GitHub manifest.json dynamic',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'key', example: 'permissions' }),
+          pathParam({ name: 'user', example: 'sindresorhus' }),
+          pathParam({ name: 'repo', example: 'show-all-github-issues' }),
+          queryParam({ name: 'filename', example: 'extension/manifest.json' }),
+        ],
       },
-      staticPreview: this.render({
-        key: 'permissions',
-        value: ['webRequest', 'webRequestBlocking'],
-      }),
-      documentation,
     },
-    {
-      title: 'GitHub manifest.json dynamic',
-      pattern: ':key/:user/:repo/:branch',
-      namedParams: {
-        key: 'permissions',
-        user: 'sindresorhus',
-        repo: 'show-all-github-issues',
-        branch: 'master',
+    '/github/manifest-json/{key}/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'GitHub manifest.json dynamic (branch)',
+        description: documentation,
+        parameters: [
+          pathParam({ name: 'key', example: 'permissions' }),
+          pathParam({ name: 'user', example: 'sindresorhus' }),
+          pathParam({ name: 'repo', example: 'show-all-github-issues' }),
+          pathParam({ name: 'branch', example: 'main' }),
+          queryParam({ name: 'filename', example: 'extension/manifest.json' }),
+        ],
       },
-      staticPreview: this.render({
-        key: 'permissions',
-        value: ['webRequest', 'webRequestBlocking'],
-        branch: 'master',
-      }),
-      documentation,
     },
-    {
-      title: 'GitHub manifest.json dynamic (path)',
-      pattern: ':key/:user/:repo',
-      namedParams: {
-        key: 'permissions',
-        user: 'RedSparr0w',
-        repo: 'IndieGala-Helper',
-      },
-      queryParams: {
-        filename: 'extension/manifest.json',
-      },
-      staticPreview: this.render({
-        key: 'permissions',
-        value: ['bundle', 'rollup', 'micro library'],
-      }),
-      documentation,
-    },
-    {
-      title: 'GitHub manifest.json dynamic (path)',
-      pattern: ':key/:user/:repo/:branch',
-      namedParams: {
-        key: 'permissions',
-        user: 'RedSparr0w',
-        repo: 'IndieGala-Helper',
-        branch: 'master',
-      },
-      queryParams: {
-        filename: 'extension/manifest.json',
-      },
-      staticPreview: this.render({
-        key: 'permissions',
-        value: ['bundle', 'rollup', 'micro library'],
-        branch: 'master',
-      }),
-      documentation,
-    },
-  ]
+  }
 
   static defaultBadgeData = { label: 'manifest' }
 
@@ -204,7 +137,4 @@ class DynamicGithubManifest extends ConditionalGithubAuthV3Service {
   }
 }
 
-module.exports = {
-  GithubManifestVersion,
-  DynamicGithubManifest,
-}
+export { GithubManifestVersion, DynamicGithubManifest }

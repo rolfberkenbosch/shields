@@ -1,12 +1,8 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderDownloadsBadge } from '../downloads.js'
+import { BasePuppetForgeModulesService } from './puppetforge-base.js'
 
-const { downloadCount } = require('../color-formatters')
-const { metric } = require('../text-formatters')
-const { BasePuppetForgeModulesService } = require('./puppetforge-base')
-
-module.exports = class PuppetforgeModuleDownloads extends (
-  BasePuppetForgeModulesService
-) {
+export default class PuppetforgeModuleDownloads extends BasePuppetForgeModulesService {
   static category = 'downloads'
 
   static route = {
@@ -14,28 +10,28 @@ module.exports = class PuppetforgeModuleDownloads extends (
     pattern: ':user/:moduleName',
   }
 
-  static examples = [
-    {
-      title: 'Puppet Forge downloads',
-      namedParams: {
-        user: 'camptocamp',
-        moduleName: 'openldap',
+  static openApi = {
+    '/puppetforge/dt/{user}/{moduleName}': {
+      get: {
+        summary: 'Puppet Forge downloads',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'camptocamp',
+          },
+          {
+            name: 'moduleName',
+            example: 'openldap',
+          },
+        ),
       },
-      staticPreview: this.render({ downloads: 720000 }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'downloads' }
 
-  static render({ downloads }) {
-    return {
-      message: metric(downloads),
-      color: downloadCount(downloads),
-    }
-  }
-
   async handle({ user, moduleName }) {
-    const data = await this.fetch({ user, moduleName })
-    return this.constructor.render({ downloads: data.downloads })
+    const { downloads } = await this.fetch({ user, moduleName })
+    return renderDownloadsBadge({ downloads })
   }
 }

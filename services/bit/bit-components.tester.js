@@ -1,13 +1,12 @@
-'use strict'
+import { ServiceTester } from '../tester.js'
 
-const t = (module.exports = require('../tester').createServiceTester())
-const { isMetric } = require('../test-validators')
-
-t.create('collection (valid)').get('/ramda/ramda.json').expectBadge({
-  label: 'components',
-  message: isMetric,
+export const t = new ServiceTester({
+  id: 'bitcomponents',
+  title: 'BitComponents',
+  pathPrefix: '/bit/collection/total-components',
 })
 
-t.create('collection (valid)')
-  .get('/bit/no-collection-test.json')
-  .expectBadge({ label: 'components', message: 'collection not found' })
+t.create('collection').get('/ramda/ramda.json').expectBadge({
+  label: 'bitcomponents',
+  message: 'retired badge',
+})

@@ -1,8 +1,7 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseOreService, description } from './ore-base.js'
 
-const { BaseOreService, documentation, keywords } = require('./ore-base')
-
-module.exports = class OreCategory extends BaseOreService {
+export default class OreCategory extends BaseOreService {
   static category = 'other'
 
   static route = {
@@ -10,17 +9,18 @@ module.exports = class OreCategory extends BaseOreService {
     pattern: ':pluginId',
   }
 
-  static examples = [
-    {
-      title: 'Ore Category',
-      namedParams: {
-        pluginId: 'nucleus',
+  static openApi = {
+    '/ore/category/{pluginId}': {
+      get: {
+        summary: 'Ore Category',
+        description,
+        parameters: pathParams({
+          name: 'pluginId',
+          example: 'nucleus',
+        }),
       },
-      staticPreview: this.render({ category: 'misc' }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'category',

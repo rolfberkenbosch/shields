@@ -1,14 +1,8 @@
-'use strict'
+import { coveragePercentage as coveragePercentageColor } from '../color-formatters.js'
+import { NotFound, pathParams } from '../index.js'
+import { BasePuppetForgeModulesService } from './puppetforge-base.js'
 
-const {
-  coveragePercentage: coveragePercentageColor,
-} = require('../color-formatters')
-const { NotFound } = require('..')
-const { BasePuppetForgeModulesService } = require('./puppetforge-base')
-
-module.exports = class PuppetforgeModuleFeedback extends (
-  BasePuppetForgeModulesService
-) {
+export default class PuppetforgeModuleFeedback extends BasePuppetForgeModulesService {
   static category = 'rating'
 
   static route = {
@@ -16,16 +10,23 @@ module.exports = class PuppetforgeModuleFeedback extends (
     pattern: ':user/:moduleName',
   }
 
-  static examples = [
-    {
-      title: 'Puppet Forge feedback score',
-      namedParams: {
-        user: 'camptocamp',
-        moduleName: 'openssl',
+  static openApi = {
+    '/puppetforge/f/{user}/{moduleName}': {
+      get: {
+        summary: 'Puppet Forge feedback score',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'camptocamp',
+          },
+          {
+            name: 'moduleName',
+            example: 'openssl',
+          },
+        ),
       },
-      staticPreview: this.render({ score: 61 }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'score' }
 

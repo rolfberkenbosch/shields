@@ -1,32 +1,30 @@
-'use strict'
+import Joi from 'joi'
+import { ServiceTester } from '../tester.js'
+import { isVPlusDottedVersionAtLeastOne } from '../test-validators.js'
 
-const Joi = require('joi')
-const { ServiceTester } = require('../tester')
-const { isVPlusDottedVersionAtLeastOne } = require('../test-validators')
-
-const t = (module.exports = new ServiceTester({
+export const t = new ServiceTester({
   id: 'GithubManifest',
   title: 'GithubManifest',
   pathPrefix: '/github/manifest-json',
-}))
+})
 
 t.create('Manifest version')
   .get('/v/sindresorhus/show-all-github-issues.json')
   .expectBadge({
-    label: 'version',
+    label: 'manifest',
     message: isVPlusDottedVersionAtLeastOne,
   })
 
 t.create('Manifest version (path)')
   .get('/v/RedSparr0w/IndieGala-Helper.json?filename=extension/manifest.json')
   .expectBadge({
-    label: 'version',
+    label: 'manifest',
     message: isVPlusDottedVersionAtLeastOne,
   })
 
 t.create('Manifest version (path not found)')
   .get(
-    '/v/RedSparr0w/IndieGala-Helper.json?filename=invalid-directory/manifest.json'
+    '/v/RedSparr0w/IndieGala-Helper.json?filename=invalid-directory/manifest.json',
   )
   .expectBadge({
     label: 'version',
@@ -40,7 +38,7 @@ t.create('Manifest name (path)')
 
 t.create('Manifest array (path)')
   .get(
-    '/permissions/RedSparr0w/IndieGala-Helper.json?filename=extension/manifest.json'
+    '/permissions/RedSparr0w/IndieGala-Helper.json?filename=extension/manifest.json',
   )
   .expectBadge({
     label: 'permissions',
@@ -49,7 +47,7 @@ t.create('Manifest array (path)')
 
 t.create('Manifest object (path)')
   .get(
-    '/background/RedSparr0w/IndieGala-Helper.json?filename=extension/manifest.json'
+    '/background/RedSparr0w/IndieGala-Helper.json?filename=extension/manifest.json',
   )
   .expectBadge({ label: 'manifest', message: 'invalid key value' })
 

@@ -1,12 +1,10 @@
-'use strict'
-
-const { ServiceTester } = require('../tester')
-const { isDependencyState } = require('../test-validators')
-const t = (module.exports = new ServiceTester({
+import { ServiceTester } from '../tester.js'
+import { isDependencyState } from '../test-validators.js'
+export const t = new ServiceTester({
   id: 'LibrariesIoDependencies',
   title: 'LibrariesIoDependencies',
   pathPrefix: '/librariesio',
-}))
+})
 
 t.create('dependencies for package (project name contains dot)')
   .timeout(10000)
@@ -35,6 +33,22 @@ t.create('dependencies for scoped npm package')
 t.create('dependencies for scoped npm package with version')
   .timeout(10000)
   .get('/release/npm/@babel/core/7.0.0-rc.0.json')
+  .expectBadge({
+    label: 'dependencies',
+    message: isDependencyState,
+  })
+
+t.create('dependencies for package name containing slashes')
+  .timeout(10000)
+  .get('/release/go/github.com/ipfs/kubo.json')
+  .expectBadge({
+    label: 'dependencies',
+    message: isDependencyState,
+  })
+
+t.create('dependencies for package name containing slashes with version')
+  .timeout(10000)
+  .get('/release/go/github.com/ipfs/kubo/v0.30.0.json')
   .expectBadge({
     label: 'dependencies',
     message: isDependencyState,

@@ -1,30 +1,28 @@
-'use strict'
-
-const {
+import { pathParams } from '../index.js'
+import {
   SymfonyInsightBase,
-  keywords,
+  description,
   gradeColors,
-} = require('./symfony-insight-base')
+} from './symfony-insight-base.js'
 
-module.exports = class SymfonyInsightGrade extends SymfonyInsightBase {
+export default class SymfonyInsightGrade extends SymfonyInsightBase {
   static route = {
     base: 'symfony/i/grade',
     pattern: ':projectUuid',
   }
 
-  static examples = [
-    {
-      title: 'SymfonyInsight Grade',
-      namedParams: {
-        projectUuid: '15c5c748-f8d8-4b56-b536-a29a151aac6c',
+  static openApi = {
+    '/symfony/i/grade/{projectUuid}': {
+      get: {
+        summary: 'SymfonyInsight Grade',
+        description,
+        parameters: pathParams({
+          name: 'projectUuid',
+          example: 'a92cacf2-ba32-4f36-b040-5a9f1d7f8f25',
+        }),
       },
-      staticPreview: this.render({
-        grade: 'bronze',
-        status: 'finished',
-      }),
-      keywords,
     },
-  ]
+  }
 
   static render({ status, grade = 'none' }) {
     const label = 'grade'

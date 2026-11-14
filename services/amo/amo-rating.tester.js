@@ -1,14 +1,13 @@
-'use strict'
-
-const Joi = require('joi')
-const { isStarRating } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import Joi from 'joi'
+import { isStarRating } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('Rating')
   .get('/rating/IndieGala-Helper.json')
   .expectBadge({
     label: 'rating',
-    message: Joi.string().regex(/^\d\/\d$/),
+    message: Joi.string().regex(/^\d(\.\d)?\/\d$/),
   })
 
 t.create('Stars')

@@ -1,19 +1,18 @@
-'use strict'
-
-const Joi = require('joi')
-const {
-  documentation,
+import Joi from 'joi'
+import {
+  documentation as description,
   testResultQueryParamSchema,
+  testResultOpenApiQueryParams,
   renderTestResultBadge,
-} = require('../test-results')
-const { optionalNonNegativeInteger } = require('../validators')
-const { InvalidResponse } = require('..')
-const JenkinsBase = require('./jenkins-base')
-const {
+} from '../test-results.js'
+import { optionalNonNegativeInteger } from '../validators.js'
+import { InvalidResponse, queryParam } from '../index.js'
+import JenkinsBase from './jenkins-base.js'
+import {
   buildTreeParamQueryString,
   buildUrl,
   queryParamSchema,
-} = require('./jenkins-common')
+} from './jenkins-common.js'
 
 // In the API response, the `actions` array can be empty, and when it is not empty it will contain a
 // mix of objects. Some will be empty objects, and several will not have the test count properties.
@@ -30,41 +29,35 @@ const schema = Joi.object({
         totalCount: optionalNonNegativeInteger,
         failCount: optionalNonNegativeInteger,
         skipCount: optionalNonNegativeInteger,
-      })
+      }),
     )
     .required(),
 }).required()
 
-module.exports = class JenkinsTests extends JenkinsBase {
-  static category = 'build'
-
+export default class JenkinsTests extends JenkinsBase {
+  static category = 'test-results'
   static route = {
     base: 'jenkins',
     pattern: 'tests',
     queryParamSchema: queryParamSchema.concat(testResultQueryParamSchema),
   }
 
-  static examples = [
-    {
-      title: 'Jenkins tests',
-      namedParams: {},
-      queryParams: {
-        compact_message: null,
-        passed_label: 'passed',
-        failed_label: 'failed',
-        skipped_label: 'skipped',
-        jobUrl: 'https://jenkins.sqlalchemy.org/job/alembic_coverage',
+  static openApi = {
+    '/jenkins/tests': {
+      get: {
+        summary: 'Jenkins Tests',
+        description,
+        parameters: [
+          queryParam({
+            name: 'jobUrl',
+            example: 'https://ci.freebsd.org/job/FreeBSD-main-amd64-test',
+            required: true,
+          }),
+          ...testResultOpenApiQueryParams,
+        ],
       },
-      staticPreview: this.render({
-        passed: 477,
-        failed: 2,
-        skipped: 0,
-        total: 479,
-        isCompact: false,
-      }),
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'tests' }
 
@@ -109,19 +102,19 @@ module.exports = class JenkinsTests extends JenkinsBase {
   async handle(
     namedParams,
     {
-      disableStrictSSL,
       jobUrl,
       compact_message: compactMessage,
       passed_label: passedLabel,
       failed_label: failedLabel,
       skipped_label: skippedLabel,
-    }
+    },
   ) {
     const json = await this.fetch({
       url: buildUrl({ jobUrl }),
       schema,
-      qs: buildTreeParamQueryString('actions[failCount,skipCount,totalCount]'),
-      disableStrictSSL,
+      searchParams: buildTreeParamQueryString(
+        'actions[failCount,skipCount,totalCount]',
+      ),
     })
     const { passed, failed, skipped, total } = this.transform({ json })
     return this.constructor.render({

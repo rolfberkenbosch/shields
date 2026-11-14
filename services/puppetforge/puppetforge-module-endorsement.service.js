@@ -1,11 +1,7 @@
-'use strict'
+import { NotFound, pathParams } from '../index.js'
+import { BasePuppetForgeModulesService } from './puppetforge-base.js'
 
-const { NotFound } = require('..')
-const { BasePuppetForgeModulesService } = require('./puppetforge-base')
-
-module.exports = class PuppetforgeModuleEndorsement extends (
-  BasePuppetForgeModulesService
-) {
+export default class PuppetforgeModuleEndorsement extends BasePuppetForgeModulesService {
   static category = 'rating'
 
   static route = {
@@ -13,16 +9,23 @@ module.exports = class PuppetforgeModuleEndorsement extends (
     pattern: ':user/:moduleName',
   }
 
-  static examples = [
-    {
-      title: 'Puppet Forge endorsement',
-      namedParams: {
-        user: 'camptocamp',
-        moduleName: 'openssl',
+  static openApi = {
+    '/puppetforge/e/{user}/{moduleName}': {
+      get: {
+        summary: 'Puppet Forge endorsement',
+        parameters: pathParams(
+          {
+            name: 'user',
+            example: 'camptocamp',
+          },
+          {
+            name: 'moduleName',
+            example: 'openssl',
+          },
+        ),
       },
-      staticPreview: this.render({ endorsement: 'approved' }),
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'endorsement' }
 

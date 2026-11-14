@@ -1,18 +1,17 @@
-'use strict'
-
-const { redirector } = require('..')
+import { redirector } from '../index.js'
 
 const commonAttrs = {
   category: 'analysis',
   dateAdded: new Date('2019-04-24'),
 }
 
-module.exports = [
+export default [
   redirector({
     route: {
       base: 'scrutinizer',
-      pattern: ':vcs(g|b)/:user/:repo/:branch*',
+      pattern: ':vcs/:user/:repo/:branch*',
     },
+    routeEnum: ['g', 'b'],
     transformPath: ({ vcs, user, repo, branch }) =>
       `/scrutinizer/quality/${vcs}/${user}/${repo}${
         branch ? `/${branch}` : ''

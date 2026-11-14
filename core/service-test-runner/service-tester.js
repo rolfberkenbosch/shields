@@ -1,14 +1,12 @@
-'use strict'
 /**
  * @module
  */
 
-const emojic = require('emojic')
-const trace = require('../base-service/trace')
-const frisby = require('./icedfrisby-shields')(
-  // eslint-disable-next-line import/order
-  require('icedfrisby-nock')(require('icedfrisby'))
-)
+import icedfrisbyNockModule from 'icedfrisby-nock'
+import icedfrisbyModule from 'icedfrisby'
+import trace from '../base-service/trace.js'
+import icedfrisbyShieldsModule from './icedfrisby-shields.js'
+const frisby = icedfrisbyShieldsModule(icedfrisbyNockModule(icedfrisbyModule))
 
 /**
  * Encapsulate a suite of tests. Create new tests using create() and register
@@ -47,7 +45,7 @@ class ServiceTester {
    *
    * @param {Function} ServiceClass
    *    A class that extends base-service/base.BaseService
-   * @returns {module:core/service-test-runner/service-tester~ServiceTester}
+   * @returns {ServiceTester}
    *    ServiceTester for ServiceClass
    */
   static forServiceClass(ServiceClass) {
@@ -84,7 +82,7 @@ class ServiceTester {
       .before(() => {
         this.beforeEach()
       })
-      // eslint-disable-next-line mocha/prefer-arrow-callback
+      // eslint-disable-next-line promise/prefer-await-to-then
       .finally(function () {
         // `this` is the IcedFrisby instance.
         let responseBody
@@ -93,7 +91,7 @@ class ServiceTester {
         } catch (e) {
           responseBody = this._response.body
         }
-        trace.logTrace('outbound', emojic.shield, 'Response', responseBody)
+        trace.logTrace('outbound', '🛡', 'Response', responseBody)
       })
 
     this.specs.push(spec)
@@ -140,4 +138,4 @@ class ServiceTester {
   }
 }
 
-module.exports = ServiceTester
+export default ServiceTester

@@ -1,10 +1,8 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderDownloadsBadge } from '../downloads.js'
+import { BaseOreService, description } from './ore-base.js'
 
-const { metric } = require('../text-formatters')
-const { downloadCount } = require('../color-formatters')
-const { BaseOreService, documentation, keywords } = require('./ore-base')
-
-module.exports = class OreDownloads extends BaseOreService {
+export default class OreDownloads extends BaseOreService {
   static category = 'downloads'
 
   static route = {
@@ -12,33 +10,23 @@ module.exports = class OreDownloads extends BaseOreService {
     pattern: ':pluginId',
   }
 
-  static examples = [
-    {
-      title: 'Ore Downloads',
-      namedParams: {
-        pluginId: 'nucleus',
+  static openApi = {
+    '/ore/dt/{pluginId}': {
+      get: {
+        summary: 'Ore Downloads',
+        description,
+        parameters: pathParams({
+          name: 'pluginId',
+          example: 'nucleus',
+        }),
       },
-      staticPreview: this.render({ downloads: 560891 }),
-      documentation,
-      keywords,
     },
-  ]
-
-  static defaultBadgeData = {
-    label: 'downloads',
   }
 
-  static render({ downloads }) {
-    return {
-      message: metric(downloads),
-      color: downloadCount(downloads),
-    }
-  }
+  static defaultBadgeData = { label: 'downloads' }
 
   async handle({ pluginId }) {
-    const {
-      stats: { downloads },
-    } = await this.fetch({ pluginId })
-    return this.constructor.render({ downloads })
+    const { stats } = await this.fetch({ pluginId })
+    return renderDownloadsBadge({ downloads: stats.downloads })
   }
 }

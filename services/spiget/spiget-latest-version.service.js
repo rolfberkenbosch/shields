@@ -1,15 +1,14 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { BaseSpigetService, documentation, keywords } = require('./spiget-base')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { BaseSpigetService, description } from './spiget-base.js'
 
 const versionSchema = Joi.object({
   downloads: Joi.number().required(),
   name: Joi.string().required(),
 }).required()
 
-module.exports = class SpigetLatestVersion extends BaseSpigetService {
+export default class SpigetLatestVersion extends BaseSpigetService {
   static category = 'version'
 
   static route = {
@@ -17,17 +16,18 @@ module.exports = class SpigetLatestVersion extends BaseSpigetService {
     pattern: ':resourceId',
   }
 
-  static examples = [
-    {
-      title: 'Spiget Version',
-      namedParams: {
-        resourceId: '9089',
+  static openApi = {
+    '/spiget/version/{resourceId}': {
+      get: {
+        summary: 'Spiget Version',
+        description,
+        parameters: pathParams({
+          name: 'resourceId',
+          example: '9089',
+        }),
       },
-      staticPreview: renderVersionBadge({ version: 2.1 }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'spiget',

@@ -1,11 +1,6 @@
-'use strict'
-
-const Joi = require('joi')
-const {
-  coveragePercentage: coveragePercentageColor,
-} = require('../color-formatters')
-const { BaseSvgScrapingService } = require('..')
-const { NotFound } = require('..')
+import Joi from 'joi'
+import { coveragePercentage as coveragePercentageColor } from '../color-formatters.js'
+import { BaseSvgScrapingService, NotFound, pathParams } from '../index.js'
 
 const schema = Joi.object({
   message: Joi.alternatives()
@@ -13,27 +8,36 @@ const schema = Joi.object({
     .required(),
 }).required()
 
-module.exports = class CodacyCoverage extends BaseSvgScrapingService {
+export default class CodacyCoverage extends BaseSvgScrapingService {
   static category = 'coverage'
   static route = { base: 'codacy/coverage', pattern: ':projectId/:branch*' }
 
-  static examples = [
-    {
-      title: 'Codacy coverage',
-      pattern: ':projectId',
-      namedParams: { projectId: '59d607d0e311408885e418004068ea58' },
-      staticPreview: this.render({ percentage: 90 }),
-    },
-    {
-      title: 'Codacy branch coverage',
-      pattern: ':projectId/:branch',
-      namedParams: {
-        projectId: '59d607d0e311408885e418004068ea58',
-        branch: 'master',
+  static openApi = {
+    '/codacy/coverage/{projectId}': {
+      get: {
+        summary: 'Codacy coverage',
+        parameters: pathParams({
+          name: 'projectId',
+          example: 'b6a59cdf5ca64eab9104928d4f9bbb97',
+        }),
       },
-      staticPreview: this.render({ percentage: 90 }),
     },
-  ]
+    '/codacy/coverage/{projectId}/{branch}': {
+      get: {
+        summary: 'Codacy coverage (branch)',
+        parameters: pathParams(
+          {
+            name: 'projectId',
+            example: 'b6a59cdf5ca64eab9104928d4f9bbb97',
+          },
+          {
+            name: 'branch',
+            example: 'master',
+          },
+        ),
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'coverage' }
 
@@ -54,11 +58,11 @@ module.exports = class CodacyCoverage extends BaseSvgScrapingService {
     const { message: coverageString } = await this._requestSvg({
       schema,
       url: `https://api.codacy.com/project/badge/coverage/${encodeURIComponent(
-        projectId
+        projectId,
       )}`,
-      options: { qs: { branch } },
+      options: { searchParams: { branch } },
       valueMatcher: /text-anchor="middle">([^<>]+)<\/text>/,
-      errorMessages: {
+      httpErrors: {
         404: 'project not found',
       },
     })

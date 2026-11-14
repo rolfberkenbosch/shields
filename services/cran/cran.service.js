@@ -1,8 +1,6 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '../version.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.object({
   License: Joi.string().required(),
@@ -22,13 +20,17 @@ class CranLicense extends BaseCranService {
   static category = 'license'
   static route = { base: 'cran/l', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'CRAN/METACRAN',
-      namedParams: { packageName: 'devtools' },
-      staticPreview: this.render({ license: 'GPL (>= 2)' }),
+  static openApi = {
+    '/cran/l/{packageName}': {
+      get: {
+        summary: 'CRAN/METACRAN License',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'devtools',
+        }),
+      },
     },
-  ]
+  }
 
   static render({ license }) {
     return {
@@ -48,13 +50,17 @@ class CranVersion extends BaseCranService {
   static category = 'version'
   static route = { base: 'cran/v', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'CRAN/METACRAN',
-      namedParams: { packageName: 'devtools' },
-      staticPreview: this.render({ version: '2.0.1' }),
+  static openApi = {
+    '/cran/v/{packageName}': {
+      get: {
+        summary: 'CRAN/METACRAN Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'devtools',
+        }),
+      },
     },
-  ]
+  }
 
   static render({ version }) {
     return renderVersionBadge({ version })
@@ -66,4 +72,4 @@ class CranVersion extends BaseCranService {
   }
 }
 
-module.exports = { CranLicense, CranVersion }
+export { CranLicense, CranVersion }

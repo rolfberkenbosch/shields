@@ -1,8 +1,7 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseSpigetService, description } from './spiget-base.js'
 
-const { BaseSpigetService, documentation, keywords } = require('./spiget-base')
-
-module.exports = class SpigetTestedVersions extends BaseSpigetService {
+export default class SpigetTestedVersions extends BaseSpigetService {
   static category = 'platform-support'
 
   static route = {
@@ -10,17 +9,18 @@ module.exports = class SpigetTestedVersions extends BaseSpigetService {
     pattern: ':resourceId',
   }
 
-  static examples = [
-    {
-      title: 'Spiget tested server versions',
-      namedParams: {
-        resourceId: '9089',
+  static openApi = {
+    '/spiget/tested-versions/{resourceId}': {
+      get: {
+        summary: 'Spiget tested server versions',
+        description,
+        parameters: pathParams({
+          name: 'resourceId',
+          example: '9089',
+        }),
       },
-      staticPreview: this.render({ versions: '1.7-1.13' }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'tested versions',

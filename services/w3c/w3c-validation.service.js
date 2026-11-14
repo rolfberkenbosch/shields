@@ -1,14 +1,13 @@
-'use strict'
-const Joi = require('joi')
-const { optionalUrl } = require('../validators')
-const { BaseJsonService, NotFound } = require('..')
-const {
-  documentation,
+import Joi from 'joi'
+import { url } from '../validators.js'
+import { BaseJsonService, NotFound, pathParam, queryParam } from '../index.js'
+import {
+  description,
   presetRegex,
   getColor,
   getMessage,
   getSchema,
-} = require('./w3c-validation-helper')
+} from './w3c-validation-helper.js'
 
 const schema = Joi.object({
   url: Joi.string().optional(),
@@ -17,40 +16,79 @@ const schema = Joi.object({
     .items(
       Joi.object({
         type: Joi.string()
-          .allow('info', 'error', 'non-document-error')
+          .equal('info', 'error', 'non-document-error')
           .required(),
         subType: Joi.string().optional(),
         message: Joi.string().required(),
-      })
+      }),
     ),
 }).required()
 
 const queryParamSchema = Joi.object({
-  targetUrl: optionalUrl.required(),
+  targetUrl: url,
   preset: Joi.string().regex(presetRegex).allow(''),
 }).required()
 
-module.exports = class W3cValidation extends BaseJsonService {
+const parserDescription = `The parser that is used for validation. This is a passthru value to the service
+- \`default\`: This will not pass a parser to the API and make the API choose the parser based on the validated content
+- \`html\`: HTML
+- \`xml\`: XML (don't load external entities)
+- \`xmldtd\`: XML (load external entities)
+`
+
+export default class W3cValidation extends BaseJsonService {
   static category = 'analysis'
 
   static route = {
     base: 'w3c-validation',
-    pattern: ':parser(default|html|xml|xmldtd)',
+    pattern: ':parser',
     queryParamSchema,
   }
+  static routeEnum = ['default', 'html', 'xml', 'xmldtd']
 
-  static examples = [
-    {
-      title: 'W3C Validation',
-      namedParams: { parser: 'html' },
-      queryParams: {
-        targetUrl: 'https://validator.nu/',
-        preset: 'HTML, SVG 1.1, MathML 3.0',
+  static openApi = {
+    '/w3c-validation/{parser}': {
+      get: {
+        summary: 'W3C Validation',
+        description,
+        parameters: [
+          pathParam({
+            name: 'parser',
+            example: 'html',
+            schema: { type: 'string', enum: this.getEnum('parser') },
+            description: parserDescription,
+          }),
+          queryParam({
+            name: 'targetUrl',
+            example: 'https://validator.nu/',
+            required: true,
+            description: 'URL of the document to be validate',
+          }),
+          queryParam({
+            name: 'preset',
+            example: 'HTML, SVG 1.1, MathML 3.0',
+            description:
+              'This is used to determine the schema for the document to be valdiated against.',
+            schema: {
+              type: 'string',
+              enum: [
+                'HTML, SVG 1.1, MathML 3.0',
+                'HTML, SVG 1.1, MathML 3.0, ITS 2.0',
+                'HTML, SVG 1.1, MathML 3.0, RDFa Lite 1.1',
+                'HTML 4.01 Strict, URL / XHTML 1.0 Strict, URL',
+                'HTML 4.01 Transitional, URL / XHTML 1.0 Transitional, URL',
+                'HTML 4.01 Frameset, URL / XHTML 1.0 Frameset, URL',
+                'XHTML, SVG 1.1, MathML 3.0',
+                'XHTML, SVG 1.1, MathML 3.0, RDFa Lite 1.1',
+                'XHTML 1.0 Strict, URL, Ruby, SVG 1.1, MathML 3.0',
+                'SVG 1.1, URL, XHTML, MathML 3.0',
+              ],
+            },
+          }),
+        ],
       },
-      staticPreview: this.render({ messageTypes: {} }),
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'w3c',
@@ -68,7 +106,7 @@ module.exports = class W3cValidation extends BaseJsonService {
       url: 'https://validator.nu/',
       schema,
       options: {
-        qs: {
+        searchParams: {
           schema: getSchema(preset),
           parser: parser === 'default' ? undefined : parser,
           doc: encodeURI(targetUrl),

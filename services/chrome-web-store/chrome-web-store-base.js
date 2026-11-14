@@ -1,10 +1,14 @@
-'use strict'
+import { ChromeWebStore } from 'webextension-store-meta/lib/chrome-web-store/index.js'
+import checkErrorResponse from '../../core/base-service/check-error-response.js'
+import { BaseService, Inaccessible } from '../index.js'
 
-const ChromeWebStore = require('webextension-store-meta/lib/chrome-web-store')
-const checkErrorResponse = require('../../core/base-service/check-error-response')
-const { BaseService, Inaccessible } = require('..')
+const description = `
+Our servers make requests to the Chrome Web Store from the US East region. Therefore, the extension must not be regionally restricted by the publisher for that location.
+`
 
-module.exports = class BaseChromeWebStoreService extends BaseService {
+export { description }
+
+export default class BaseChromeWebStoreService extends BaseService {
   async fetch({ storeId }) {
     try {
       return await ChromeWebStore.load({ id: storeId })

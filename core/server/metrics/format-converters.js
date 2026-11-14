@@ -1,12 +1,14 @@
-'use strict'
-const groupBy = require('lodash.groupby')
-
 function promClientJsonToInfluxV2(metrics, extraLabels = {}) {
   return metrics
     .flatMap(metric => {
-      const valuesByLabels = groupBy(metric.values, value =>
-        JSON.stringify(Object.entries(value.labels).sort())
-      )
+      const valuesByLabels = metric.values.reduce((acc, value) => {
+        const key = JSON.stringify(Object.entries(value.labels).sort())
+        if (!acc[key]) {
+          acc[key] = []
+        }
+        acc[key].push(value)
+        return acc
+      }, {})
       return Object.values(valuesByLabels).map(metricsWithSameLabel => {
         const labels = Object.entries(metricsWithSameLabel[0].labels)
           .concat(Object.entries(extraLabels))
@@ -24,4 +26,4 @@ function promClientJsonToInfluxV2(metrics, extraLabels = {}) {
     .join('\n')
 }
 
-module.exports = { promClientJsonToInfluxV2 }
+export { promClientJsonToInfluxV2 }

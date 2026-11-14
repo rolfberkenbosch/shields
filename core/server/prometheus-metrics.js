@@ -1,9 +1,12 @@
-'use strict'
+import prometheus from 'prom-client'
 
-const decamelize = require('decamelize')
-const prometheus = require('prom-client')
+const toSnakeCase = name =>
+  name
+    .replace(/([a-z\d])([A-Z])/g, '$1_$2') // npmVersion => npm_Version
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2') // HTTPStatus => HTTP_Status
+    .toLowerCase()
 
-module.exports = class PrometheusMetrics {
+export default class PrometheusMetrics {
   constructor({ register } = {}) {
     this.register = register || new prometheus.Registry()
     this.counters = {
@@ -19,44 +22,10 @@ module.exports = class PrometheusMetrics {
         // 250 ms increments up to 2 seconds, then 500 ms increments up to 8
         // seconds, then 1 second increments up to 15 seconds.
         buckets: [
-          250,
-          500,
-          750,
-          1000,
-          1250,
-          1500,
-          1750,
-          2000,
-          2250,
-          2500,
-          2750,
-          3000,
-          3250,
-          3500,
-          3750,
-          4000,
-          4500,
-          5000,
-          5500,
-          6000,
-          6500,
-          7000,
-          7500,
-          8000,
-          9000,
-          10000,
-          11000,
-          12000,
-          13000,
-          14000,
-          15000,
+          250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000,
+          3250, 3500, 3750, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500,
+          8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000,
         ],
-        registers: [this.register],
-      }),
-      rateLimitExceeded: new prometheus.Counter({
-        name: 'rate_limit_exceeded_total',
-        help: 'Count of rate limit exceeded by type',
-        labelNames: ['rate_limit_type'],
         registers: [this.register],
       }),
       serviceResponseSize: new prometheus.Histogram({
@@ -67,18 +36,61 @@ module.exports = class PrometheusMetrics {
         buckets: prometheus.exponentialBuckets(64 * 1024, 2, 8),
         registers: [this.register],
       }),
+      githubTokenInvalidations: new prometheus.Counter({
+        name: 'github_token_invalidations_total',
+        help: 'Total GitHub tokens invalidated and removed from the pool',
+        labelNames: ['reason'],
+        registers: [this.register],
+      }),
+    }
+    this.gauges = {
+      githubTokenPoolStandard: new prometheus.Gauge({
+        name: 'github_token_pool_standard_requests_remaining',
+        help: 'Total GitHub API requests remaining in standard token pool',
+        registers: [this.register],
+      }),
+      githubTokenPoolSearch: new prometheus.Gauge({
+        name: 'github_token_pool_search_requests_remaining',
+        help: 'Total GitHub API requests remaining in search token pool',
+        registers: [this.register],
+      }),
+      githubTokenPoolGraphql: new prometheus.Gauge({
+        name: 'github_token_pool_graphql_requests_remaining',
+        help: 'Total GitHub API requests remaining in GraphQL token pool',
+        registers: [this.register],
+      }),
+      githubTokenPoolStandardCount: new prometheus.Gauge({
+        name: 'github_token_pool_standard_count',
+        help: 'Number of tokens in standard token pool',
+        registers: [this.register],
+      }),
+      githubTokenPoolSearchCount: new prometheus.Gauge({
+        name: 'github_token_pool_search_count',
+        help: 'Number of tokens in search token pool',
+        registers: [this.register],
+      }),
+      githubTokenPoolGraphqlCount: new prometheus.Gauge({
+        name: 'github_token_pool_graphql_count',
+        help: 'Number of tokens in GraphQL token pool',
+        registers: [this.register],
+      }),
     }
     this.interval = prometheus.collectDefaultMetrics({
       register: this.register,
     })
   }
 
-  async registerMetricsEndpoint(server) {
+  async registerMetricsEndpoint(server, enabled = true) {
     const { register } = this
 
     server.route(/^\/metrics$/, async (data, match, end, ask) => {
-      ask.res.setHeader('Content-Type', register.contentType)
-      ask.res.end(await register.metrics())
+      if (enabled) {
+        ask.res.setHeader('Content-Type', register.contentType)
+        ask.res.end(await register.metrics())
+      } else {
+        ask.res.statusCode = 404
+        ask.res.end()
+      }
     })
   }
 
@@ -102,7 +114,7 @@ module.exports = class PrometheusMetrics {
    * @returns {object} `{ inc() {} }`.
    */
   createNumRequestCounter({ category, serviceFamily, name }) {
-    const service = decamelize(name)
+    const service = toSnakeCase(name)
     return this.counters.numRequests.labels(category, serviceFamily, service)
   }
 
@@ -110,16 +122,42 @@ module.exports = class PrometheusMetrics {
     return this.counters.responseTime.observe(responseTime)
   }
 
-  noteRateLimitExceeded(rateLimitType) {
-    return this.counters.rateLimitExceeded.labels(rateLimitType).inc()
-  }
-
   createServiceResponseSizeHistogram({ category, serviceFamily, name }) {
-    const service = decamelize(name)
+    const service = toSnakeCase(name)
     return this.counters.serviceResponseSize.labels(
       category,
       serviceFamily,
-      service
+      service,
+    )
+  }
+
+  /**
+   * Record that a GitHub token was invalidated and removed from the pool.
+   *
+   * @param {object} attrs Attributes
+   * @param {string} attrs.reason Why the token was invalidated,
+   *   e.g: 'http_401' or 'account_suspended'
+   */
+  noteGithubTokenInvalidation({ reason }) {
+    this.counters.githubTokenInvalidations.labels(reason).inc()
+  }
+
+  noteGithubTokenPoolMetrics(tokenDebugInfo) {
+    const { standardTokens, searchTokens, graphqlTokens } = tokenDebugInfo
+
+    this.gauges.githubTokenPoolStandard.set(standardTokens.totalUsesRemaining)
+    this.gauges.githubTokenPoolStandardCount.set(
+      standardTokens.allTokenDebugInfo.length,
+    )
+
+    this.gauges.githubTokenPoolSearch.set(searchTokens.totalUsesRemaining)
+    this.gauges.githubTokenPoolSearchCount.set(
+      searchTokens.allTokenDebugInfo.length,
+    )
+
+    this.gauges.githubTokenPoolGraphql.set(graphqlTokens.totalUsesRemaining)
+    this.gauges.githubTokenPoolGraphqlCount.set(
+      graphqlTokens.allTokenDebugInfo.length,
     )
   }
 }

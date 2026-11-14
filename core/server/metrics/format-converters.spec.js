@@ -1,8 +1,6 @@
-'use strict'
-
-const { expect } = require('chai')
-const prometheus = require('prom-client')
-const { promClientJsonToInfluxV2 } = require('./format-converters')
+import { expect } from 'chai'
+import prometheus from 'prom-client'
+import { promClientJsonToInfluxV2 } from './format-converters.js'
 
 describe('Metric format converters', function () {
   describe('prom-client JSON to InfluxDB line protocol (version 2)', function () {
@@ -97,7 +95,7 @@ describe('Metric format converters', function () {
 prometheus,le=50 histogram1_bucket=2
 prometheus,le=15 histogram1_bucket=2
 prometheus,le=5 histogram1_bucket=1
-prometheus histogram1_count=3,histogram1_sum=111`)
+prometheus histogram1_count=3,histogram1_sum=111`),
       )
     })
 
@@ -120,7 +118,7 @@ prometheus histogram1_count=3,histogram1_sum=111`)
 prometheus,le=50 histogram1_bucket=2
 prometheus,le=15 histogram1_bucket=2
 prometheus,le=5 histogram1_bucket=1
-prometheus histogram1_count=3,histogram1_sum=111`)
+prometheus histogram1_count=3,histogram1_sum=111`),
       )
     })
 
@@ -147,7 +145,7 @@ prometheus histogram1_count=3,histogram1_sum=111`)
         sortLines(`prometheus,quantile=0.99 summary1=100
 prometheus,quantile=0.9 summary1=100
 prometheus,quantile=0.1 summary1=1
-prometheus summary1_count=3,summary1_sum=111`)
+prometheus summary1_count=3,summary1_sum=111`),
       )
     })
 
@@ -169,7 +167,7 @@ prometheus summary1_count=3,summary1_sum=111`)
         sortLines(`prometheus,quantile=0.99 summary1=100
 prometheus,quantile=0.9 summary1=100
 prometheus,quantile=0.1 summary1=1
-prometheus summary1_count=3,summary1_sum=111`)
+prometheus summary1_count=3,summary1_sum=111`),
       )
     })
 
@@ -206,7 +204,7 @@ prometheus summary1_count=3,summary1_sum=111`)
       })
 
       expect(influx).to.be.equal(
-        'prometheus,env=production,instance=instance1 counter1=11'
+        'prometheus,env=production,instance=instance1 counter1=11',
       )
     })
   })

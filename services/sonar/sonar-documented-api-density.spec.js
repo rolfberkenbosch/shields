@@ -1,7 +1,10 @@
-'use strict'
-
-const { test, given } = require('sazerac')
-const SonarDocumentedApiDensity = require('./sonar-documented-api-density.service')
+import { test, given } from 'sazerac'
+import { testAuth } from '../test-helpers.js'
+import SonarDocumentedApiDensity from './sonar-documented-api-density.service.js'
+import {
+  legacySonarResponse,
+  testAuthConfigOverride,
+} from './sonar-spec-helpers.js'
 
 describe('SonarDocumentedApiDensity', function () {
   test(SonarDocumentedApiDensity.render, () => {
@@ -24,6 +27,17 @@ describe('SonarDocumentedApiDensity', function () {
     given({ density: 100 }).expect({
       message: '100%',
       color: 'brightgreen',
+    })
+  })
+
+  describe('auth', function () {
+    it('sends the auth information as configured', async function () {
+      return testAuth(
+        SonarDocumentedApiDensity,
+        'BasicAuth',
+        legacySonarResponse('density', 93),
+        { configOverride: testAuthConfigOverride },
+      )
     })
   })
 })

@@ -1,40 +1,44 @@
-'use strict'
-
-const camelcase = require('camelcase')
-const emojic = require('emojic')
-const Joi = require('joi')
-const queryString = require('query-string')
-const BaseService = require('./base')
-const {
+import camelcase from 'camelcase'
+import Joi from 'joi'
+import qs from 'qs'
+import BaseService from './base.js'
+import {
   serverHasBeenUpSinceResourceCached,
   setCacheHeadersForStaticResource,
-} = require('./cache-headers')
-const { isValidCategory } = require('./categories')
-const { MetricHelper } = require('./metric-helper')
-const { isValidRoute, prepareRoute, namedParamsForMatch } = require('./route')
-const trace = require('./trace')
+} from './cache-headers.js'
+import { isValidCategory } from './categories.js'
+import { MetricHelper } from './metric-helper.js'
+import { isValidRoute, prepareRoute, namedParamsForMatch } from './route.js'
+import { openApiSchema } from './service-definitions.js'
+import trace from './trace.js'
 
 const attrSchema = Joi.object({
   name: Joi.string().min(3),
   category: isValidCategory,
+  isRetired: Joi.boolean().default(true),
   route: isValidRoute,
+  routeEnum: Joi.array().items(Joi.string()).optional(),
+  openApi: openApiSchema,
   transformPath: Joi.func()
     .maxArity(1)
     .required()
     .error(
       () =>
-        '"transformPath" must be a function that transforms named params to a new path'
+        '"transformPath" must be a function that transforms named params to a new path',
     ),
   transformQueryParams: Joi.func().arity(1),
   dateAdded: Joi.date().required(),
   overrideTransformedQueryParams: Joi.bool().optional(),
 }).required()
 
-module.exports = function redirector(attrs) {
+export default function redirector(attrs) {
   const {
     name,
     category,
+    isRetired,
     route,
+    routeEnum,
+    openApi,
     transformPath,
     transformQueryParams,
     overrideTransformedQueryParams,
@@ -48,8 +52,10 @@ module.exports = function redirector(attrs) {
       })}Redirect`
 
     static category = category
-    static isDeprecated = true
+    static isRetired = isRetired
     static route = route
+    static routeEnum = routeEnum
+    static openApi = openApi
 
     static register({ camp, metricInstance }, { rasterUrl }) {
       const { regex, captureNames } = prepareRoute({
@@ -73,27 +79,26 @@ module.exports = function redirector(attrs) {
         const metricHandle = metricHelper.startRequest()
 
         const namedParams = namedParamsForMatch(captureNames, match, this)
-        trace.logTrace(
-          'inbound',
-          emojic.arrowHeadingUp,
-          'Redirector',
-          route.base
-        )
-        trace.logTrace('inbound', emojic.ticket, 'Named params', namedParams)
-        trace.logTrace('inbound', emojic.crayon, 'Query params', queryParams)
+        trace.logTrace('inbound', '⤴️', 'Redirector', route.base)
+        trace.logTrace('inbound', '🎫', 'Named params', namedParams)
+        trace.logTrace('inbound', '🖍', 'Query params', queryParams)
 
         const targetPath = encodeURI(transformPath(namedParams))
-        trace.logTrace('validate', emojic.dart, 'Target', targetPath)
+        trace.logTrace('validate', '🎯', 'Target', targetPath)
 
         let urlSuffix = ask.uri.search || ''
 
         if (transformQueryParams) {
-          const specifiedParams = queryString.parse(urlSuffix)
+          const specifiedParams = qs.parse(urlSuffix, {
+            ignoreQueryPrefix: true,
+          })
           const transformedParams = transformQueryParams(namedParams)
           const redirectParams = overrideTransformedQueryParams
             ? Object.assign(transformedParams, specifiedParams)
             : Object.assign(specifiedParams, transformedParams)
-          const outQueryString = queryString.stringify(redirectParams)
+          const outQueryString = qs.stringify(redirectParams, {
+            strictNullHandling: true,
+          })
           urlSuffix = `?${outQueryString}`
         }
 
@@ -102,13 +107,17 @@ module.exports = function redirector(attrs) {
         const redirectUrl = `${
           format === 'png' ? rasterUrl : ''
         }${targetPath}.${format}${urlSuffix}`
-        trace.logTrace('outbound', emojic.shield, 'Redirect URL', redirectUrl)
+        trace.logTrace('outbound', '🛡', 'Redirect URL', redirectUrl)
 
         ask.res.statusCode = 301
         ask.res.setHeader('Location', redirectUrl)
 
-        // To avoid caching mistakes for a long time, and to make this simpler
-        // to reason about, use the same cache semantics as the static badge.
+        /* To avoid caching mistakes forever
+           (in the absence of cache control directives that specify otherwise,
+           301 redirects are cached without any expiry date)
+           and to make this simpler to reason about,
+           use the same cache semantics as the static badge.
+        */
         setCacheHeadersForStaticResource(ask.res)
 
         ask.res.end()

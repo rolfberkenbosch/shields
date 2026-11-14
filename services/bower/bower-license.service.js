@@ -1,19 +1,22 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderLicenseBadge } from '../licenses.js'
+import BaseBowerService from './bower-base.js'
 
-const { renderLicenseBadge } = require('../licenses')
-const BaseBowerService = require('./bower-base')
-
-module.exports = class BowerLicense extends BaseBowerService {
+export default class BowerLicense extends BaseBowerService {
   static category = 'license'
   static route = { base: 'bower/l', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'Bower',
-      namedParams: { packageName: 'bootstrap' },
-      staticPreview: renderLicenseBadge({ licenses: ['MIT'] }),
+  static openApi = {
+    '/bower/l/{packageName}': {
+      get: {
+        summary: 'Bower License',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'bootstrap',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'license' }
 

@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { isBuildStatus, renderBuildStatusBadge } = require('../build-status')
-const ScrutinizerBase = require('./scrutinizer-base')
+import Joi from 'joi'
+import { isBuildStatus, renderBuildStatusBadge } from '../build-status.js'
+import { pathParams } from '../index.js'
+import ScrutinizerBase from './scrutinizer-base.js'
 
 const schema = Joi.object({
   default_branch: Joi.string().required(),
@@ -13,7 +12,7 @@ const schema = Joi.object({
         build_status: Joi.object({
           status: Joi.alternatives().try(isBuildStatus, Joi.equal('unknown')),
         }).required(),
-      })
+      }),
     )
     .required(),
 }).required()
@@ -37,22 +36,43 @@ class ScrutinizerBuildBase extends ScrutinizerBase {
 class ScrutinizerBuild extends ScrutinizerBuildBase {
   static route = {
     base: 'scrutinizer/build',
-    pattern: ':vcs(g|b)/:user/:repo/:branch*',
+    pattern: ':vcs/:user/:repo/:branch*',
   }
+  static routeEnum = ['g', 'b']
 
-  static examples = [
-    {
-      title: 'Scrutinizer build (GitHub/Bitbucket)',
-      pattern: ':vcs(g|b)/:user/:repo/:branch?',
-      namedParams: {
-        vcs: 'g',
-        user: 'filp',
-        repo: 'whoops',
-        branch: 'master',
+  static openApi = {
+    '/scrutinizer/build/{vcs}/{user}/{repo}': {
+      get: {
+        summary: 'Scrutinizer build (GitHub/Bitbucket)',
+        parameters: pathParams(
+          {
+            name: 'vcs',
+            example: 'g',
+            description: 'Platform: Either GitHub or Bitbucket',
+            schema: { type: 'string', enum: this.getEnum('vcs') },
+          },
+          { name: 'user', example: 'filp' },
+          { name: 'repo', example: 'whoops' },
+        ),
       },
-      staticPreview: renderBuildStatusBadge({ status: 'passing' }),
     },
-  ]
+    '/scrutinizer/build/{vcs}/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'Scrutinizer build (GitHub/Bitbucket) with branch',
+        parameters: pathParams(
+          {
+            name: 'vcs',
+            example: 'g',
+            description: 'Platform: Either GitHub or Bitbucket',
+            schema: { type: 'string', enum: this.getEnum('vcs') },
+          },
+          { name: 'user', example: 'filp' },
+          { name: 'repo', example: 'whoops' },
+          { name: 'branch', example: 'master' },
+        ),
+      },
+    },
+  }
 
   async handle({ vcs, user, repo, branch }) {
     return this.makeBadge({
@@ -73,19 +93,29 @@ class ScrutinizerGitLabBuild extends ScrutinizerBuildBase {
   // The example used is valid, but the project will not be accessible if Shields users try to use it.
   // https://gitlab.propertywindow.nl/propertywindow/client
   // https://scrutinizer-ci.com/gl/propertywindow/propertywindow/client/badges/quality-score.png?b=master&s=dfae6992a48184cc2333b4c349cec0447f0d67c2
-  static examples = [
-    {
-      title: 'Scrutinizer build (GitLab)',
-      pattern: ':instance/:user/:repo/:branch?',
-      namedParams: {
-        instance: 'propertywindow',
-        user: 'propertywindow',
-        repo: 'client',
-        branch: 'master',
+  static openApi = {
+    '/scrutinizer/build/gl/{instance}/{user}/{repo}': {
+      get: {
+        summary: 'Scrutinizer build (GitLab)',
+        parameters: pathParams(
+          { name: 'instance', example: 'propertywindow' },
+          { name: 'user', example: 'propertywindow' },
+          { name: 'repo', example: 'client' },
+        ),
       },
-      staticPreview: renderBuildStatusBadge({ status: 'passing' }),
     },
-  ]
+    '/scrutinizer/build/gl/{instance}/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'Scrutinizer build (GitLab) with branch',
+        parameters: pathParams(
+          { name: 'instance', example: 'propertywindow' },
+          { name: 'user', example: 'propertywindow' },
+          { name: 'repo', example: 'client' },
+          { name: 'branch', example: 'master' },
+        ),
+      },
+    },
+  }
 
   async handle({ instance, user, repo, branch }) {
     return this.makeBadge({
@@ -107,7 +137,7 @@ class ScrutinizerPlainGitBuild extends ScrutinizerBuildBase {
   }
 }
 
-module.exports = [
+export default [
   ScrutinizerBuild,
   ScrutinizerGitLabBuild,
   ScrutinizerPlainGitBuild,

@@ -1,9 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { isBuildStatus, renderBuildStatusBadge } = require('../build-status')
-const { optionalUrl } = require('../validators')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { isBuildStatus, renderBuildStatusBadge } from '../build-status.js'
+import { optionalUrl } from '../validators.js'
+import { BaseJsonService, queryParam, pathParam } from '../index.js'
 
 const schema = Joi.object({
   status: Joi.alternatives()
@@ -15,7 +13,7 @@ const queryParamSchema = Joi.object({
   server: optionalUrl,
 }).required()
 
-module.exports = class DroneBuild extends BaseJsonService {
+export default class DroneBuild extends BaseJsonService {
   static category = 'build'
   static route = {
     base: 'drone/build',
@@ -24,48 +22,51 @@ module.exports = class DroneBuild extends BaseJsonService {
   }
 
   static auth = { passKey: 'drone_token', serviceKey: 'drone' }
-  static examples = [
-    {
-      title: 'Drone (cloud)',
-      pattern: ':user/:repo',
-      namedParams: {
-        user: 'drone',
-        repo: 'drone',
+
+  static openApi = {
+    '/drone/build/{user}/{repo}': {
+      get: {
+        summary: 'Drone',
+        parameters: [
+          pathParam({
+            name: 'user',
+            example: 'drone',
+          }),
+          pathParam({
+            name: 'repo',
+            example: 'autoscaler',
+          }),
+          queryParam({
+            name: 'server',
+            example: 'https://drone.shields.io',
+          }),
+        ],
       },
-      staticPreview: renderBuildStatusBadge({ status: 'success' }),
     },
-    {
-      title: 'Drone (cloud) with branch',
-      pattern: ':user/:repo/:branch',
-      namedParams: {
-        user: 'drone',
-        repo: 'drone',
-        branch: 'master',
+    '/drone/build/{user}/{repo}/{branch}': {
+      get: {
+        summary: 'Drone (branch)',
+        parameters: [
+          pathParam({
+            name: 'user',
+            example: 'drone',
+          }),
+          pathParam({
+            name: 'repo',
+            example: 'autoscaler',
+          }),
+          pathParam({
+            name: 'branch',
+            example: 'master',
+          }),
+          queryParam({
+            name: 'server',
+            example: 'https://drone.shields.io',
+          }),
+        ],
       },
-      staticPreview: renderBuildStatusBadge({ status: 'success' }),
     },
-    {
-      title: 'Drone (self-hosted)',
-      pattern: ':user/:repo',
-      queryParams: { server: 'https://drone.shields.io' },
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
-      },
-      staticPreview: renderBuildStatusBadge({ status: 'success' }),
-    },
-    {
-      title: 'Drone (self-hosted) with branch',
-      pattern: ':user/:repo/:branch',
-      queryParams: { server: 'https://drone.shields.io' },
-      namedParams: {
-        user: 'badges',
-        repo: 'shields',
-        branch: 'feat/awesome-thing',
-      },
-      staticPreview: renderBuildStatusBadge({ status: 'success' }),
-    },
-  ]
+  }
 
   static defaultBadgeData = { label: 'build' }
 
@@ -75,12 +76,12 @@ module.exports = class DroneBuild extends BaseJsonService {
         schema,
         url: `${server}/api/repos/${user}/${repo}/builds/latest`,
         options: {
-          qs: { ref: branch ? `refs/heads/${branch}` : undefined },
+          searchParams: { ref: branch ? `refs/heads/${branch}` : undefined },
         },
-        errorMessages: {
+        httpErrors: {
           401: 'repo not found or not authorized',
         },
-      })
+      }),
     )
     return renderBuildStatusBadge({ status: json.status })
   }

@@ -1,14 +1,13 @@
-'use strict'
+import { redirector } from '../index.js'
 
-const { redirector } = require('..')
-
-module.exports = [
+export default [
   redirector({
     category: 'chat',
     route: {
       base: 'discourse',
-      pattern: ':protocol(http|https)/:hostAndPath(.+)/:metric',
+      pattern: ':protocol/:hostAndPath(.+)/:metric',
     },
+    routeEnum: ['http', 'https'],
     transformPath: ({ metric }) => `/discourse/${metric}`,
     transformQueryParams: ({ protocol, hostAndPath }) => ({
       server: `${protocol}://${hostAndPath}`,

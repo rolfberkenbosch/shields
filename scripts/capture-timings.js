@@ -1,7 +1,5 @@
-'use strict'
-
-const readline = require('readline')
-const minimist = require('minimist')
+import readline from 'readline'
+import { parseArgs } from 'util'
 
 async function captureTimings(warmupIterations) {
   const rl = readline.createInterface({
@@ -31,22 +29,24 @@ async function captureTimings(warmupIterations) {
 function logResults({ times, iterations, warmupIterations }) {
   if (isNaN(iterations)) {
     console.log(
-      `No timings captured. Have you included console.time statements in the badge creation code path?`
+      'No timings captured. Have you included console.time statements in the badge creation code path?',
     )
   } else {
     const timedIterations = iterations - warmupIterations
     for (const [label, time] of Object.entries(times)) {
       const averageTime = time / timedIterations
       console.log(
-        `Average '${label}' time over ${timedIterations} iterations: ${averageTime}ms`
+        `Average '${label}' time over ${timedIterations} iterations: ${averageTime}ms`,
       )
     }
   }
 }
 
 async function main() {
-  const args = minimist(process.argv)
-  const warmupIterations = parseInt(args['warmup-iterations']) || 100
+  const { 'warmup-iterations': warmupIter = '100' } = parseArgs({
+    options: { 'warmup-iterations': { type: 'string' } },
+  }).values
+  const warmupIterations = parseInt(warmupIter)
   const { times, iterations } = await captureTimings(warmupIterations)
   logResults({ times, iterations, warmupIterations })
 }

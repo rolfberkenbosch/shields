@@ -1,53 +1,19 @@
-'use strict'
-
-const { expect } = require('chai')
-const nock = require('nock')
-const { cleanUpNockAfterEach, defaultContext } = require('../test-helpers')
-const SonarFortifyRating = require('./sonar-fortify-rating.service')
-
-const token = 'abc123def456'
-const config = {
-  public: {
-    services: {
-      sonar: { authorizedOrigins: ['http://sonar.petalslink.com'] },
-    },
-  },
-  private: {
-    sonarqube_token: token,
-  },
-}
+import { testAuth } from '../test-helpers.js'
+import SonarFortifyRating from './sonar-fortify-rating.service.js'
+import {
+  legacySonarResponse,
+  testAuthConfigOverride,
+} from './sonar-spec-helpers.js'
 
 describe('SonarFortifyRating', function () {
-  cleanUpNockAfterEach()
-
-  it('sends the auth information as configured', async function () {
-    const scope = nock('http://sonar.petalslink.com')
-      .get('/api/measures/component')
-      .query({
-        componentKey: 'org.ow2.petals:petals-se-ase',
-        metricKeys: 'fortify-security-rating',
-      })
-      // This ensures that the expected credentials are actually being sent with the HTTP request.
-      // Without this the request wouldn't match and the test would fail.
-      .basicAuth({ user: token })
-      .reply(200, {
-        component: {
-          measures: [{ metric: 'fortify-security-rating', value: 4 }],
-        },
-      })
-
-    expect(
-      await SonarFortifyRating.invoke(
-        defaultContext,
-        config,
-        { component: 'org.ow2.petals:petals-se-ase' },
-        { server: 'http://sonar.petalslink.com' }
+  describe('auth', function () {
+    it('sends the auth information as configured', async function () {
+      return testAuth(
+        SonarFortifyRating,
+        'BasicAuth',
+        legacySonarResponse('fortify-security-rating', 4),
+        { configOverride: testAuthConfigOverride },
       )
-    ).to.deep.equal({
-      color: 'green',
-      message: '4/5',
     })
-
-    scope.done()
   })
 })

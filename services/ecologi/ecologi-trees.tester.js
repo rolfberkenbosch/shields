@@ -1,7 +1,6 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
-const { isMetric } = require('../test-validators')
+import { createServiceTester } from '../tester.js'
+import { isMetric } from '../test-validators.js'
+export const t = await createServiceTester()
 
 t.create('request for existing username').get('/ecologi.json').expectBadge({
   label: 'trees',
@@ -13,7 +12,7 @@ t.create('request for existing username')
   .intercept(nock =>
     nock('https://public.ecologi.com')
       .get('/users/ecologi/trees')
-      .reply(200, { total: 50 })
+      .reply(200, { total: 50 }),
   )
   .expectBadge({
     label: 'trees',

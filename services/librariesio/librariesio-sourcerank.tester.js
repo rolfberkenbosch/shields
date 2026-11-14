@@ -1,7 +1,6 @@
-'use strict'
-
-const { anyInteger } = require('../validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { anyInteger } from '../validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('sourcerank').timeout(10000).get('/npm/got.json').expectBadge({
   label: 'sourcerank',
@@ -11,6 +10,14 @@ t.create('sourcerank').timeout(10000).get('/npm/got.json').expectBadge({
 t.create('sourcerank (scoped npm package)')
   .timeout(10000)
   .get('/npm/@babel/core.json')
+  .expectBadge({
+    label: 'sourcerank',
+    message: anyInteger,
+  })
+
+t.create('sourcerank (package name containing slashes)')
+  .timeout(10000)
+  .get('/go/github.com/ipfs/kubo.json')
   .expectBadge({
     label: 'sourcerank',
     message: anyInteger,

@@ -1,14 +1,12 @@
-'use strict'
-
-const Joi = require('joi')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const projectsCountRegex = /^\s[0-9]*(\.[0-9]k)?\sprojects$/
 const schema = Joi.object({
   value: Joi.string().regex(projectsCountRegex).required(),
 }).required()
 
-module.exports = class Sourcegraph extends BaseJsonService {
+export default class Sourcegraph extends BaseJsonService {
   static category = 'other'
 
   static route = {
@@ -16,16 +14,17 @@ module.exports = class Sourcegraph extends BaseJsonService {
     pattern: ':repo(.*?)',
   }
 
-  static examples = [
-    {
-      title: 'Sourcegraph for Repo Reference Count',
-      pattern: ':repo',
-      namedParams: {
-        repo: 'github.com/gorilla/mux',
+  static openApi = {
+    '/sourcegraph/rrc/{repo}': {
+      get: {
+        summary: 'Sourcegraph for Repo Reference Count',
+        parameters: pathParams({
+          name: 'repo',
+          example: 'github.com/gorilla/mux',
+        }),
       },
-      staticPreview: this.render({ projectsCount: '9.9k projects' }),
     },
-  ]
+  }
 
   static defaultBadgeData = { color: 'brightgreen', label: 'used by' }
 

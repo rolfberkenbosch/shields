@@ -1,32 +1,38 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger } from '../validators.js'
+import { BaseJsonService, InvalidParameter, pathParams } from '../index.js'
 
 const schema = Joi.object({
   count: nonNegativeInteger.required(),
 }).required()
 
-module.exports = class SourceforgeOpenTickets extends BaseJsonService {
+export default class SourceforgeOpenTickets extends BaseJsonService {
   static category = 'other'
 
   static route = {
     base: 'sourceforge/open-tickets',
-    pattern: ':project/:type(bugs|feature-requests)',
+    pattern: ':project/:type',
   }
 
-  static examples = [
-    {
-      title: 'Sourceforge Open Tickets',
-      namedParams: {
-        type: 'bugs',
-        project: 'sevenzip',
+  static openApi = {
+    '/sourceforge/open-tickets/{project}/{type}': {
+      get: {
+        summary: 'Sourceforge Open Tickets',
+        parameters: pathParams(
+          {
+            name: 'project',
+            example: 'sevenzip',
+          },
+          {
+            name: 'type',
+            example: 'bugs',
+            schema: { type: 'string', enum: ['bugs', 'feature-requests'] },
+          },
+        ),
       },
-      staticPreview: this.render({ count: 1338 }),
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'open tickets',
@@ -45,13 +51,16 @@ module.exports = class SourceforgeOpenTickets extends BaseJsonService {
     return this._requestJson({
       schema,
       url,
-      errorMessages: {
+      httpErrors: {
         404: 'project not found',
       },
     })
   }
 
   async handle({ type, project }) {
+    if (!['bugs', 'feature-requests'].includes(type)) {
+      throw new InvalidParameter({ prettyMessage: 'invalid ticket type' })
+    }
     const { count } = await this.fetch({ type, project })
     return this.constructor.render({ count })
   }

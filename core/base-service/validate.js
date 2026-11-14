@@ -1,8 +1,5 @@
-'use strict'
-
-const emojic = require('emojic')
-const Joi = require('joi')
-const trace = require('./trace')
+import Joi from 'joi'
+import trace from './trace.js'
 
 function validate(
   {
@@ -11,27 +8,18 @@ function validate(
     includeKeys = false,
     traceErrorMessage = 'Data did not match schema',
     traceSuccessMessage = 'Data after validation',
-    allowAndStripUnknownKeys = true,
   },
   data,
-  schema
+  schema,
 ) {
   if (!schema || !Joi.isSchema(schema)) {
     throw Error('A Joi schema is required')
   }
-  const options = { abortEarly: false }
-  if (allowAndStripUnknownKeys) {
-    options.allowUnknown = true
-    options.stripUnknown = true
-  }
+  const options = { abortEarly: false, allowUnknown: true, stripUnknown: true }
+
   const { error, value } = schema.validate(data, options)
   if (error) {
-    trace.logTrace(
-      'validate',
-      emojic.womanShrugging,
-      traceErrorMessage,
-      error.message
-    )
+    trace.logTrace('validate', '🤷', traceErrorMessage, error.message)
 
     let prettyMessage = prettyErrorMessage
     if (includeKeys) {
@@ -43,11 +31,11 @@ function validate(
 
     throw new ErrorClass({ prettyMessage, underlyingError: error })
   } else {
-    trace.logTrace('validate', emojic.bathtub, traceSuccessMessage, value, {
+    trace.logTrace('validate', '🛁', traceSuccessMessage, value, {
       deep: true,
     })
     return value
   }
 }
 
-module.exports = validate
+export default validate

@@ -1,8 +1,7 @@
-'use strict'
-
-const Joi = require('joi')
-const { renderVersionBadge } = require('../version')
-const EclipseMarketplaceBase = require('./eclipse-marketplace-base')
+import Joi from 'joi'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import EclipseMarketplaceBase from './eclipse-marketplace-base.js'
 
 const versionResponseSchema = Joi.object({
   marketplace: Joi.object({
@@ -12,18 +11,24 @@ const versionResponseSchema = Joi.object({
   }),
 }).required()
 
-module.exports = class EclipseMarketplaceVersion extends (
-  EclipseMarketplaceBase
-) {
+export default class EclipseMarketplaceVersion extends EclipseMarketplaceBase {
   static category = 'version'
-  static route = this.buildRoute('eclipse-marketplace/v')
-  static examples = [
-    {
-      title: 'Eclipse Marketplace',
-      namedParams: { name: 'notepad4e' },
-      staticPreview: this.render({ version: '1.0.1' }),
+  static route = {
+    base: 'eclipse-marketplace/v',
+    pattern: ':name',
+  }
+
+  static openApi = {
+    '/eclipse-marketplace/v/{name}': {
+      get: {
+        summary: 'Eclipse Marketplace Version',
+        parameters: pathParams({
+          name: 'name',
+          example: 'notepad4e',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'eclipse marketplace' }
 

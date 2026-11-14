@@ -1,32 +1,39 @@
-'use strict'
-
-const Joi = require('joi')
-const { BaseSvgScrapingService } = require('..')
-const { codacyGrade } = require('./codacy-helpers')
+import Joi from 'joi'
+import { BaseSvgScrapingService, pathParams } from '../index.js'
+import { codacyGrade } from './codacy-helpers.js'
 
 const schema = Joi.object({ message: codacyGrade }).required()
 
-module.exports = class CodacyGrade extends BaseSvgScrapingService {
+export default class CodacyGrade extends BaseSvgScrapingService {
   static category = 'analysis'
   static route = { base: 'codacy/grade', pattern: ':projectId/:branch*' }
 
-  static examples = [
-    {
-      title: 'Codacy grade',
-      pattern: ':projectId',
-      namedParams: { projectId: 'e27821fb6289410b8f58338c7e0bc686' },
-      staticPreview: this.render({ grade: 'A' }),
-    },
-    {
-      title: 'Codacy branch grade',
-      pattern: ':projectId/:branch',
-      namedParams: {
-        projectId: 'e27821fb6289410b8f58338c7e0bc686',
-        branch: 'master',
+  static openApi = {
+    '/codacy/grade/{projectId}': {
+      get: {
+        summary: 'Codacy grade',
+        parameters: pathParams({
+          name: 'projectId',
+          example: 'b6a59cdf5ca64eab9104928d4f9bbb97',
+        }),
       },
-      staticPreview: this.render({ grade: 'A' }),
     },
-  ]
+    '/codacy/grade/{projectId}/{branch}': {
+      get: {
+        summary: 'Codacy grade (branch)',
+        parameters: pathParams(
+          {
+            name: 'projectId',
+            example: 'b6a59cdf5ca64eab9104928d4f9bbb97',
+          },
+          {
+            name: 'branch',
+            example: 'master',
+          },
+        ),
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'code quality' }
 
@@ -50,10 +57,10 @@ module.exports = class CodacyGrade extends BaseSvgScrapingService {
     const { message: grade } = await this._requestSvg({
       schema,
       url: `https://api.codacy.com/project/badge/grade/${encodeURIComponent(
-        projectId
+        projectId,
       )}`,
-      options: { qs: { branch } },
-      errorMessages: { 404: 'project or branch not found' },
+      options: { searchParams: { branch } },
+      httpErrors: { 404: 'project or branch not found' },
       valueMatcher: /visibility="hidden">([^<>]+)<\/text>/,
     })
     return this.constructor.render({ grade })

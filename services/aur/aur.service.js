@@ -1,27 +1,32 @@
-'use strict'
-
-const Joi = require('joi')
-const { floorCount: floorCountColor } = require('../color-formatters')
-const { addv, metric } = require('../text-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { BaseJsonService, NotFound } = require('..')
-const { formatDate } = require('../text-formatters')
-const { age: ageColor } = require('../color-formatters')
-const { InvalidResponse } = require('..')
+import Joi from 'joi'
+import { renderDateBadge } from '../date.js'
+import { floorCount as floorCountColor } from '../color-formatters.js'
+import { renderLicenseBadge } from '../licenses.js'
+import { metric } from '../text-formatters.js'
+import { nonNegativeInteger } from '../validators.js'
+import {
+  BaseJsonService,
+  NotFound,
+  InvalidResponse,
+  pathParams,
+} from '../index.js'
+import { renderVersionBadge } from '../version.js'
 
 const aurSchema = Joi.object({
   resultcount: nonNegativeInteger,
-  results: Joi.alternatives(
-    Joi.array().length(0).required(),
-    Joi.object({
-      License: Joi.string().required().allow(null),
-      NumVotes: nonNegativeInteger,
-      Version: Joi.string().required(),
-      OutOfDate: nonNegativeInteger.allow(null),
-      Maintainer: Joi.string().required().allow(null),
-      LastModified: nonNegativeInteger,
-    }).required()
-  ),
+  results: Joi.array()
+    .items(
+      Joi.object({
+        License: Joi.array().items(Joi.string()).allow(null),
+        NumVotes: nonNegativeInteger,
+        Popularity: Joi.number().precision(2).min(0).required(),
+        Version: Joi.string().required(),
+        OutOfDate: nonNegativeInteger.allow(null),
+        Maintainer: Joi.string().required().allow(null),
+        LastModified: nonNegativeInteger,
+      }),
+    )
+    .required(),
 }).required()
 
 class BaseAurService extends BaseJsonService {
@@ -42,8 +47,8 @@ class BaseAurService extends BaseJsonService {
     // https://wiki.archlinux.org/index.php/Aurweb_RPC_interface
     return this._requestJson({
       schema: aurSchema,
-      url: 'https://aur.archlinux.org/rpc.php',
-      options: { qs: { type: 'info', arg: packageName } },
+      url: 'https://aur.archlinux.org/rpc',
+      options: { searchParams: { v: 5, type: 'info', arg: packageName } },
     })
   }
 }
@@ -52,33 +57,34 @@ class AurLicense extends BaseAurService {
   static category = 'license'
   static route = { base: 'aur/license', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'AUR license',
-      namedParams: { packageName: 'android-studio' },
-      staticPreview: this.render({ license: 'Apache' }),
+  static openApi = {
+    '/aur/license/{packageName}': {
+      get: {
+        summary: 'AUR License',
+        description: 'Arch linux User Repository License',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'android-studio',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'license' }
 
-  static render({ license }) {
-    return { message: license, color: 'blue' }
-  }
-
   transform(json) {
-    const license = json.results.License
-    if (!license) {
+    const licenses = json.results[0].License
+    if (!licenses || licenses.length === 0) {
       throw new NotFound({ prettyMessage: 'not specified' })
     }
 
-    return { license }
+    return { licenses }
   }
 
   async handle({ packageName }) {
     const json = await this.fetch({ packageName })
-    const { license } = this.transform(json)
-    return this.constructor.render({ license })
+    const { licenses } = this.transform(json)
+    return renderLicenseBadge({ licenses, color: 'blue' })
   }
 }
 
@@ -87,13 +93,15 @@ class AurVotes extends BaseAurService {
 
   static route = { base: 'aur/votes', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'AUR votes',
-      namedParams: { packageName: 'dropbox' },
-      staticPreview: this.render({ votes: '2280' }),
+  static openApi = {
+    '/aur/votes/{packageName}': {
+      get: {
+        summary: 'AUR Votes',
+        description: 'Arch linux User Repository Votes',
+        parameters: pathParams({ name: 'packageName', example: 'dropbox' }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'votes' }
 
@@ -106,33 +114,71 @@ class AurVotes extends BaseAurService {
 
   async handle({ packageName }) {
     const json = await this.fetch({ packageName })
-    return this.constructor.render({ votes: json.results.NumVotes })
+    return this.constructor.render({ votes: json.results[0].NumVotes })
+  }
+}
+
+class AurPopularity extends BaseAurService {
+  static category = 'rating'
+
+  static route = { base: 'aur/popularity', pattern: ':packageName' }
+
+  static openApi = {
+    '/aur/popularity/{packageName}': {
+      get: {
+        summary: 'AUR Popularity',
+        description: 'Arch linux User Repository Popularity',
+        parameters: pathParams({ name: 'packageName', example: 'dropbox' }),
+      },
+    },
+  }
+
+  static defaultBadgeData = { label: 'popularity' }
+
+  static render({ popularity }) {
+    return {
+      message: popularity,
+      color: floorCountColor(popularity, 0.5, 2.5, 5),
+    }
+  }
+
+  async handle({ packageName }) {
+    const json = await this.fetch({ packageName })
+    return this.constructor.render({ popularity: json.results[0].Popularity })
   }
 }
 
 class AurVersion extends BaseAurService {
   static category = 'version'
-
   static route = { base: 'aur/version', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'AUR version',
-      namedParams: { packageName: 'visual-studio-code-bin' },
-      staticPreview: this.render({ version: '1.34.0-2', outOfDate: null }),
+  static openApi = {
+    '/aur/version/{packageName}': {
+      get: {
+        summary: 'AUR Version',
+        description: 'Arch linux User Repository Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'visual-studio-code-bin',
+        }),
+      },
     },
-  ]
+  }
+
+  static _cacheLength = 3600
 
   static render({ version, outOfDate }) {
     const color = outOfDate === null ? 'blue' : 'orange'
-    return { message: addv(version), color }
+    return renderVersionBadge({ version, versionFormatter: () => color })
   }
 
   async handle({ packageName }) {
-    const json = await this.fetch({ packageName })
+    const {
+      results: [{ Version: version, OutOfDate: outOfDate }],
+    } = await this.fetch({ packageName })
     return this.constructor.render({
-      version: json.results.Version,
-      outOfDate: json.results.OutOfDate,
+      version,
+      outOfDate,
     })
   }
 }
@@ -142,13 +188,18 @@ class AurMaintainer extends BaseAurService {
 
   static route = { base: 'aur/maintainer', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'AUR maintainer',
-      namedParams: { packageName: 'google-chrome' },
-      staticPreview: this.render({ maintainer: 'luzifer' }),
+  static openApi = {
+    '/aur/maintainer/{packageName}': {
+      get: {
+        summary: 'AUR Maintainer',
+        description: 'Arch linux User Repository Maintainer',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'google-chrome',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'maintainer', color: 'blue' }
 
@@ -158,7 +209,7 @@ class AurMaintainer extends BaseAurService {
 
   async handle({ packageName }) {
     const {
-      results: { Maintainer: maintainer },
+      results: [{ Maintainer: maintainer }],
     } = await this.fetch({ packageName })
     if (!maintainer) {
       throw new InvalidResponse({ prettyMessage: 'No maintainer' })
@@ -175,33 +226,33 @@ class AurLastModified extends BaseAurService {
     pattern: ':packageName',
   }
 
-  static examples = [
-    {
-      title: 'AUR last modified',
-      namedParams: { packageName: 'google-chrome' },
-      staticPreview: this.render({ date: new Date().getTime() }),
+  static openApi = {
+    '/aur/last-modified/{packageName}': {
+      get: {
+        summary: 'AUR Last Modified',
+        description: 'Arch linux User Repository Last Modified',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'google-chrome',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'last modified' }
 
-  static render({ date }) {
-    const color = ageColor(date)
-    const message = formatDate(date)
-    return { color, message }
-  }
-
   async handle({ packageName }) {
     const json = await this.fetch({ packageName })
-    const date = 1000 * parseInt(json.results.LastModified)
-    return this.constructor.render({ date })
+    const date = 1000 * parseInt(json.results[0].LastModified)
+    return renderDateBadge(date)
   }
 }
 
-module.exports = {
+export {
   AurLicense,
   AurVersion,
   AurVotes,
+  AurPopularity,
   AurMaintainer,
   AurLastModified,
 }

@@ -1,28 +1,20 @@
-'use strict'
+import { retiredService, redirector } from '../index.js'
 
-const { redirector } = require('..')
-
-const commonAttrs = {
-  dateAdded: new Date('2019-09-15'),
-  category: 'build',
-}
-
-module.exports = [
-  redirector({
-    ...commonAttrs,
+export default [
+  retiredService({
     name: 'TeamCityBuildLegacyCodeBetterRedirect',
+    category: 'build',
+    label: 'teamcity',
     route: {
       base: 'teamcity/codebetter',
       pattern: ':buildId',
     },
-    transformPath: ({ buildId }) => `/teamcity/build/s/${buildId}`,
-    transformQueryParams: _params => ({
-      server: 'https://teamcity.jetbrains.com',
-    }),
+    dateAdded: new Date('2025-12-20'),
+    issueUrl: 'https://github.com/badges/shields/pull/11583',
   }),
   redirector({
-    ...commonAttrs,
     name: 'TeamCityBuildRedirect',
+    category: 'build',
     route: {
       base: 'teamcity',
       pattern:
@@ -33,5 +25,6 @@ module.exports = [
     transformQueryParams: ({ protocol, hostAndPath }) => ({
       server: `${protocol}://${hostAndPath}`,
     }),
+    dateAdded: new Date('2019-09-15'),
   }),
 ]

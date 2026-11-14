@@ -1,20 +1,23 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderVersionBadge } from '../version.js'
+import { BaseCpanService, description } from './cpan.js'
 
-const { renderVersionBadge } = require('../version')
-const BaseCpanService = require('./cpan')
-
-module.exports = class CpanVersion extends BaseCpanService {
+export default class CpanVersion extends BaseCpanService {
   static category = 'version'
   static route = { base: 'cpan/v', pattern: ':packageName' }
 
-  static examples = [
-    {
-      title: 'CPAN',
-      namedParams: { packageName: 'Config-Augeas' },
-      staticPreview: renderVersionBadge({ version: '1.000' }),
-      keywords: ['perl'],
+  static openApi = {
+    '/cpan/v/{packageName}': {
+      get: {
+        summary: 'CPAN Version',
+        description,
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'Config-Augeas',
+        }),
+      },
     },
-  ]
+  }
 
   async handle({ packageName }) {
     const { version } = await this.fetch({ packageName })

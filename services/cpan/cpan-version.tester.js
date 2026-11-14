@@ -1,7 +1,6 @@
-'use strict'
-
-const { isVPlusDottedVersionAtLeastOne } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isVPlusDottedVersionAtLeastOne } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('version (valid)').get('/Config-Augeas.json').expectBadge({
   label: 'cpan',
@@ -16,7 +15,7 @@ t.create('version (version is a number rather than a string)')
       .reply(200, {
         license: ['GPL'],
         version: 0.88,
-      })
+      }),
   )
   .expectBadge({
     label: 'cpan',

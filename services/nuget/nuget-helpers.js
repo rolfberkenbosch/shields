@@ -1,27 +1,7 @@
-'use strict'
-
-const { promisify } = require('util')
-const semver = require('semver')
-const { metric, addv } = require('../text-formatters')
-const { downloadCount: downloadCountColor } = require('../color-formatters')
-const { regularUpdate } = require('../../core/legacy/regular-update')
-
-function renderVersionBadge({ version, feed }) {
-  let color
-  if (version.includes('-')) {
-    color = 'yellow'
-  } else if (version.startsWith('0')) {
-    color = 'orange'
-  } else {
-    color = 'blue'
-  }
-
-  return {
-    message: addv(version),
-    color,
-    label: feed,
-  }
-}
+import semver from 'semver'
+import { metric } from '../text-formatters.js'
+import { downloadCount as downloadCountColor } from '../color-formatters.js'
+import { getCachedResource } from '../../core/base-service/resource-cache.js'
 
 function renderDownloadBadge({ downloads }) {
   return {
@@ -54,7 +34,7 @@ function randomElementFrom(items) {
  */
 async function searchServiceUrl(baseUrl, serviceType = 'SearchQueryService') {
   // Should we really be caching all these NuGet feeds in memory?
-  const searchQueryServices = await promisify(regularUpdate)({
+  const searchQueryServices = await getCachedResource({
     url: `${baseUrl}/index.json`,
     // The endpoint changes once per year (ie, a period of n = 1 year).
     // We minimize the users' waiting time for information.
@@ -64,8 +44,7 @@ async function searchServiceUrl(baseUrl, serviceType = 'SearchQueryService') {
     // right endpoint.
     // So the waiting time within n years is n*l/x + x years, for which a
     // derivation yields an optimum at x = sqrt(n*l), roughly 42 minutes.
-    intervalMillis: 42 * 60 * 1000,
-    json: true,
+    ttl: 42 * 60 * 1000,
     scraper: json =>
       json.resources.filter(resource => resource['@type'] === serviceType),
   })
@@ -103,8 +82,7 @@ function selectVersion(versions, includePrereleases) {
   }
 }
 
-module.exports = {
-  renderVersionBadge,
+export {
   renderDownloadBadge,
   odataToObject,
   searchServiceUrl,

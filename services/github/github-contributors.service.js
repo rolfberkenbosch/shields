@@ -1,33 +1,55 @@
-'use strict'
-
-const Joi = require('joi')
-const parseLinkHeader = require('parse-link-header')
-const { renderContributorBadge } = require('../contributor-count')
-const { GithubAuthV3Service } = require('./github-auth-service')
-const { documentation, errorMessagesFor } = require('./github-helpers')
+import Joi from 'joi'
+import parseLinkHeader from 'parse-link-header'
+import { InvalidResponse, pathParams } from '../index.js'
+import { renderContributorBadge } from '../contributor-count.js'
+import { GithubAuthV3Service } from './github-auth-service.js'
+import { documentation, httpErrorsFor } from './github-helpers.js'
 
 // All we do is check its length.
 const schema = Joi.array().items(Joi.object())
 
-module.exports = class GithubContributors extends GithubAuthV3Service {
+const documentationWithNote = [
+  documentation,
+  'Note: Co-authors are not included in the count due to endpoint limitations.',
+  "For repositories whose history or contributor list is too large for GitHub's API to compute, the badge shows `repository too large`.",
+].join('\n\n')
+
+export default class GithubContributors extends GithubAuthV3Service {
   static category = 'activity'
   static route = {
     base: 'github',
-    pattern: ':variant(contributors|contributors-anon)/:user/:repo',
+    // note we call this param 'metric' instead of 'variant' because of
+    // https://github.com/badges/shields/issues/10323
+    pattern: ':metric/:user/:repo',
   }
 
-  static examples = [
-    {
-      title: 'GitHub contributors',
-      namedParams: {
-        variant: 'contributors',
-        user: 'cdnjs',
-        repo: 'cdnjs',
+  static routeEnum = ['contributors', 'contributors-anon']
+
+  static openApi = {
+    '/github/{metric}/{user}/{repo}': {
+      get: {
+        summary: 'GitHub contributors',
+        description: documentationWithNote,
+        parameters: pathParams(
+          {
+            name: 'metric',
+            example: 'contributors',
+            schema: { type: 'string', enum: this.getEnum('metric') },
+            description:
+              '`contributors-anon` includes anonymous commits, whereas `contributors` excludes them.',
+          },
+          {
+            name: 'user',
+            example: 'cdnjs',
+          },
+          {
+            name: 'repo',
+            example: 'cdnjs',
+          },
+        ),
       },
-      staticPreview: this.render({ contributorCount: 397 }),
-      documentation,
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'contributors' }
 
@@ -35,14 +57,28 @@ module.exports = class GithubContributors extends GithubAuthV3Service {
     return renderContributorBadge({ contributorCount })
   }
 
-  async handle({ variant, user, repo }) {
-    const isAnon = variant === 'contributors-anon'
+  async handle({ metric, user, repo }) {
+    const isAnon = metric === 'contributors-anon'
 
-    const { res, buffer } = await this._request({
-      url: `/repos/${user}/${repo}/contributors`,
-      options: { qs: { page: '1', per_page: '1', anon: isAnon } },
-      errorMessages: errorMessagesFor('repo not found'),
-    })
+    let res
+    let buffer
+    try {
+      ;({ res, buffer } = await this._request({
+        url: `/repos/${user}/${repo}/contributors`,
+        options: { searchParams: { page: '1', per_page: '1', anon: isAnon } },
+        httpErrors: httpErrorsFor('repo not found'),
+      }))
+    } catch (error) {
+      if (
+        error.response?.statusCode === 403 &&
+        /history or contributor list is too large/i.test(
+          error.buffer?.toString(),
+        )
+      ) {
+        throw new InvalidResponse({ prettyMessage: 'repository too large' })
+      }
+      throw error
+    }
 
     const parsed = parseLinkHeader(res.headers.link)
     let contributorCount

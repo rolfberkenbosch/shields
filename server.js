@@ -1,24 +1,21 @@
-'use strict'
-/* eslint-disable import/order */
-
-const fs = require('fs')
-const path = require('path')
+import configModule from 'config'
+import * as Sentry from '@sentry/node-core/light'
+import Server from './core/server/server.js'
 
 // Set up Sentry reporting as early in the process as possible.
-const config = require('config').util.toObject()
-const Sentry = require('@sentry/node')
+const config = configModule.util.toObject()
 const disabledIntegrations = ['Console', 'Http']
 Sentry.init({
   dsn: process.env.SENTRY_DSN || config.private.sentry_dsn,
   integrations: integrations => {
     const filtered = integrations.filter(
-      integration => !disabledIntegrations.includes(integration.name)
+      integration => !disabledIntegrations.includes(integration.name),
     )
     if (filtered.length !== integrations.length - disabledIntegrations.length) {
       throw Error(
-        `An error occurred while filtering integrations. The following inetgrations were found: ${integrations.map(
-          ({ name }) => name
-        )}`
+        `An error occurred while filtering integrations. The following integrations were found: ${integrations.map(
+          ({ name }) => name,
+        )}`,
       )
     }
     return filtered
@@ -35,29 +32,20 @@ if (process.argv[3]) {
 console.log('Configuration:')
 console.dir(config.public, { depth: null })
 
-if (fs.existsSync('.env')) {
+if (
+  config.private.youtube_api_key != null ||
+  process.env.YOUTUBE_API_KEY != null
+) {
   console.error(
-    'Legacy .env file found. It should be deleted and replaced with environment variables or config/local.yml'
+    'youtube_api_key is no longer supported, its value will be ignored. Please remove it from your config.',
   )
-  process.exit(1)
 }
 
-const legacySecretsPath = path.join(__dirname, 'private', 'secret.json')
-if (fs.existsSync(legacySecretsPath)) {
-  console.error(
-    `Legacy secrets file found at ${legacySecretsPath}. It should be deleted and secrets replaced with environment variables or config/local.yml`
-  )
-  process.exit(1)
-}
+export const server = new Server(config)
 
-const Server = require('./core/server/server')
-const server = (module.exports = new Server(config))
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down...')
+  await server.stop()
+})
 
-;(async () => {
-  try {
-    await server.start()
-  } catch (e) {
-    console.error(e)
-    process.exit(1)
-  }
-})()
+await server.start()

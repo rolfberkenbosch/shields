@@ -1,39 +1,32 @@
-'use strict'
-
-const { redirector } = require('..')
-const { buildRedirectUrl } = require('./jenkins-common')
+import { retiredService } from '../index.js'
 
 const commonProps = {
   category: 'build',
-  transformPath: () => '/jenkins/build',
-  transformQueryParams: ({ protocol, host, job }) => ({
-    jobUrl: buildRedirectUrl({ protocol, host, job }),
-  }),
+  label: 'jenkins',
+  dateAdded: new Date('2025-12-20'),
+  issueUrl: 'https://github.com/badges/shields/pull/11583',
 }
 
-module.exports = [
-  redirector({
+export default [
+  retiredService({
     route: {
       base: 'jenkins-ci/s',
       pattern: ':protocol(http|https)/:host/:job+',
     },
-    dateAdded: new Date('2019-04-20'),
     ...commonProps,
   }),
-  redirector({
+  retiredService({
     route: {
       base: 'jenkins/s',
       pattern: ':protocol(http|https)/:host/:job+',
     },
-    dateAdded: new Date('2019-04-20'),
     ...commonProps,
   }),
-  redirector({
+  retiredService({
     route: {
       base: 'jenkins/build',
       pattern: ':protocol(http|https)/:host/:job+',
     },
-    dateAdded: new Date('2019-11-29'),
     ...commonProps,
   }),
 ]

@@ -1,8 +1,7 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { BaseSpigetService, description } from './spiget-base.js'
 
-const { BaseSpigetService, documentation, keywords } = require('./spiget-base')
-
-module.exports = class SpigetDownloadSize extends BaseSpigetService {
+export default class SpigetDownloadSize extends BaseSpigetService {
   static category = 'size'
 
   static route = {
@@ -10,17 +9,18 @@ module.exports = class SpigetDownloadSize extends BaseSpigetService {
     pattern: ':resourceId',
   }
 
-  static examples = [
-    {
-      title: 'Spiget Download Size',
-      namedParams: {
-        resourceId: '9089',
+  static openApi = {
+    '/spiget/download-size/{resourceId}': {
+      get: {
+        summary: 'Spiget Download Size',
+        description,
+        parameters: pathParams({
+          name: 'resourceId',
+          example: '15904',
+        }),
       },
-      staticPreview: this.render({ size: 2.5, unit: 'MB' }),
-      documentation,
-      keywords,
     },
-  ]
+  }
 
   static defaultBadgeData = {
     label: 'size',
@@ -30,7 +30,7 @@ module.exports = class SpigetDownloadSize extends BaseSpigetService {
   static render({ size, unit, type }) {
     if (type === 'external') {
       return {
-        message: `resource hosted externally`,
+        message: 'resource hosted externally',
         color: 'lightgrey',
       }
     }

@@ -1,9 +1,7 @@
-'use strict'
+import { renderVersionBadge } from '../version.js'
+import { BaseService, InvalidResponse, pathParams } from '../index.js'
 
-const { renderVersionBadge } = require('../version')
-const { BaseService, InvalidResponse } = require('..')
-
-module.exports = class HackageVersion extends BaseService {
+export default class HackageVersion extends BaseService {
   static category = 'version'
 
   static route = {
@@ -11,13 +9,17 @@ module.exports = class HackageVersion extends BaseService {
     pattern: ':packageName',
   }
 
-  static examples = [
-    {
-      title: 'Hackage',
-      namedParams: { packageName: 'lens' },
-      staticPreview: renderVersionBadge({ version: '4.1.7' }),
+  static openApi = {
+    '/hackage/v/{packageName}': {
+      get: {
+        summary: 'Hackage Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'lens',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'hackage' }
 

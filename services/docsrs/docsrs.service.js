@@ -1,37 +1,48 @@
-'use strict'
+import Joi from 'joi'
+import { BaseJsonService, pathParams } from '../index.js'
 
-const Joi = require('joi')
-const { BaseJsonService } = require('..')
+const schema = Joi.object({
+  doc_status: Joi.boolean().required(),
+}).required()
 
-const schema = Joi.array()
-  .items(
-    Joi.object({
-      build_status: Joi.boolean().required(),
-    })
-  )
-  .min(1)
-  .required()
-
-module.exports = class DocsRs extends BaseJsonService {
+export default class DocsRs extends BaseJsonService {
   static category = 'build'
   static route = { base: 'docsrs', pattern: ':crate/:version?' }
-  static examples = [
-    {
-      title: 'docs.rs',
-      namedParams: { crate: 'regex', version: 'latest' },
-      staticPreview: this.render({ version: 'latest', buildStatus: true }),
-      keywords: ['rust'],
+  static openApi = {
+    '/docsrs/{crate}/{version}': {
+      get: {
+        summary: 'docs.rs (with version)',
+        parameters: pathParams(
+          {
+            name: 'crate',
+            example: 'regex',
+          },
+          {
+            name: 'version',
+            example: 'latest',
+          },
+        ),
+      },
     },
-  ]
+    '/docsrs/{crate}': {
+      get: {
+        summary: 'docs.rs',
+        parameters: pathParams({
+          name: 'crate',
+          example: 'regex',
+        }),
+      },
+    },
+  }
 
   static defaultBadgeData = { label: 'docs' }
 
-  static render({ buildStatus, version }) {
+  static render({ docStatus, version }) {
     let label = `docs@${version}`
     if (version === 'latest') {
       label = 'docs'
     }
-    if (buildStatus) {
+    if (docStatus) {
       return {
         label,
         message: 'passing',
@@ -49,14 +60,13 @@ module.exports = class DocsRs extends BaseJsonService {
   async fetch({ crate, version }) {
     return await this._requestJson({
       schema,
-      url: `https://docs.rs/crate/${crate}/${version}/builds.json`,
+      url: `https://docs.rs/crate/${crate}/${version}/status.json`,
+      httpErrors: version ? { 400: 'malformed version' } : {},
     })
   }
 
   async handle({ crate, version = 'latest' }) {
-    const { build_status: buildStatus } = (
-      await this.fetch({ crate, version })
-    ).pop()
-    return this.constructor.render({ version, buildStatus })
+    const { doc_status: docStatus } = await this.fetch({ crate, version })
+    return this.constructor.render({ version, docStatus })
   }
 }

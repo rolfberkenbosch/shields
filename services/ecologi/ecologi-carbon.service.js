@@ -1,24 +1,26 @@
-'use strict'
-
-const Joi = require('joi')
-const { metric } = require('../text-formatters')
-const { floorCount } = require('../color-formatters')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { metric } from '../text-formatters.js'
+import { floorCount } from '../color-formatters.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const apiSchema = Joi.object({
   total: Joi.number().positive().required(),
 }).required()
 
-module.exports = class EcologiCarbonOffset extends BaseJsonService {
+export default class EcologiCarbonOffset extends BaseJsonService {
   static category = 'other'
   static route = { base: 'ecologi/carbon', pattern: ':username' }
-  static examples = [
-    {
-      title: 'Ecologi (Carbon Offset)',
-      namedParams: { username: 'ecologi' },
-      staticPreview: this.render({ count: 15.05 }),
+  static openApi = {
+    '/ecologi/carbon/{username}': {
+      get: {
+        summary: 'Ecologi (Carbon Offset)',
+        parameters: pathParams({
+          name: 'username',
+          example: 'ecologi',
+        }),
+      },
     },
-  ]
+  }
 
   static defaultBadgeData = { label: 'carbon offset' }
 
@@ -32,7 +34,7 @@ module.exports = class EcologiCarbonOffset extends BaseJsonService {
     return this._requestJson({
       url,
       schema: apiSchema,
-      errorMessages: {
+      httpErrors: {
         404: 'username not found',
       },
     })
